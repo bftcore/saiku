@@ -15,28 +15,8 @@
  */
 package org.saiku.service.olap;
 
-import java.io.PrintWriter;
-import java.io.Serializable;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
-
 import mondrian.olap4j.SaikuMondrianHelper;
 import mondrian.rolap.RolapConnection;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.olap4j.AllocationPolicy;
@@ -107,6 +87,25 @@ import org.saiku.service.util.export.CsvExporter;
 import org.saiku.service.util.export.ExcelExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.PrintWriter;
+import java.io.Serializable;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class OlapQueryService implements Serializable {
 
@@ -242,18 +241,18 @@ public class OlapQueryService implements Serializable {
             }
 
             if (query.getTag() != null) {
-                query = applyTag(query, con, query.getTag());
+              query = applyTag(query, con, query.getTag());
             }
 
             String mdx = query.getMdx();
             log.info(runId + "\tType:" + query.getType() + ":\n" + mdx);
 
-            CellSet cellSet =  query.execute();
+            CellSet cellSet = query.execute();
             Long exec = (new Date()).getTime();
 
             if (query.getScenario() != null) {
-                log.info("Query (" + queryName + ") removing scenario:" + query.getScenario().getId());
-                con.setScenario(null);
+              log.info("Query (" + queryName + ") removing scenario:" + query.getScenario().getId());
+              con.setScenario(null);
             }
 
             CellDataSet result = OlapResultSetUtil.cellSet2Matrix(cellSet,formatter);

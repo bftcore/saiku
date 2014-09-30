@@ -32,7 +32,6 @@ import org.olap4j.query.LimitFunction;
 import org.olap4j.query.Query;
 import org.olap4j.query.QueryAxis;
 import org.olap4j.query.QueryDimension;
-import org.olap4j.query.QueryDimension.HierarchizeMode;
 import org.olap4j.query.Selection;
 import org.olap4j.query.SortOrder;
 import org.saiku.olap.dto.SaikuCube;
@@ -187,10 +186,8 @@ public class OlapQuery implements IQuery {
   public void moveDimension( QueryDimension dimension, Axis axis, int position ) {
     QueryAxis oldQueryAxis = findAxis( dimension );
     QueryAxis newQueryAxis = query.getAxis( axis );
-      if (!"Measures".equals(dimension.getName()) && !Axis.FILTER.equals( axis )) {
-      dimension.setHierarchyConsistent( true );
-      dimension.setHierarchizeMode( HierarchizeMode.PRE );
-    } else {
+
+    if (!"Measures".equals(dimension.getName()) && !Axis.FILTER.equals( axis )) {
       dimension.setHierarchyConsistent( false );
       dimension.clearHierarchizeMode();
     }
@@ -240,6 +237,7 @@ public class OlapQuery implements IQuery {
   }
 
   public String getMdx() {
+    String mdx = null;
     final Writer writer = new StringWriter();
     if ( SaikuProperties.olapConvertQuery ) {
       try {
@@ -254,7 +252,14 @@ public class OlapQuery implements IQuery {
     } else {
       this.query.getSelect().unparse( new ParseTreeWriter( new PrintWriter( writer ) ) );
     }
-    return writer.toString();
+    if (getAxis(Axis.ROWS).getSortIdentifierNodeName() != null) {
+      mdx = updateMdxWithSort(writer.toString(), getAxis(Axis.ROWS));
+    } else if (getAxis(Axis.COLUMNS).getSortIdentifierNodeName() != null) {
+      mdx = updateMdxWithSort(writer.toString(), getAxis(Axis.COLUMNS));
+    } else {
+      mdx = writer.toString();
+    }
+    return mdx;
   }
 
   public SaikuCube getSaikuCube() {
@@ -283,13 +288,12 @@ public class OlapQuery implements IQuery {
       }
 
       String mdx = getMdx();
-
       log.trace( "Executing query (" + this.getName() + ") :\n" + mdx );
-
       final Catalog catalog = query.getCube().getSchema().getCatalog();
       this.connection.setCatalog( catalog.getName() );
       OlapStatement stmt = connection.createStatement();
       this.statement = stmt;
+
       CellSet cellSet = stmt.executeOlapQuery( mdx );
       if ( scenario != null && query.getDimension( SCENARIO ) != null ) {
         QueryDimension dimension = query.getDimension( SCENARIO );
@@ -304,6 +308,34 @@ public class OlapQuery implements IQuery {
       }
     }
 
+  }
+
+  private String updateMdxWithSort(String mdx, QueryAxis axis) {
+    for (QueryDimension queryDimension : axis.getDimensions()) {
+      if (axis.getSortIdentifierNodeName().contains(queryDimension.getName()) && queryDimension.getInclusions().size() > 1) {
+        for (Selection selection : queryDimension.getInclusions()) {
+          if (axis.getSortIdentifierNodeName().equals(selection.getUniqueName() + ".CurrentMember.Name")) {
+            String sortMemberLevel = selection.getRootElement().getName();
+            String hierarhy = selection.getUniqueName().substring(1, selection.getUniqueName().indexOf("]"));
+            String selectedHierarchyLastLevel = queryDimension.getInclusions().get(queryDimension.getInclusions().size() - 1).getRootElement().getName();
+            if (!sortMemberLevel.equals(selectedHierarchyLastLevel)) {
+              mdx = getWthSortMember(hierarhy, sortMemberLevel, selectedHierarchyLastLevel) + mdx;
+              mdx = mdx.replace(axis.getSortIdentifierNodeName(), "[Measures].[OrderKey]");
+            }
+            return mdx;
+          }
+        }
+      }
+    }
+    return mdx;
+  }
+
+  private String getWthSortMember(String hierarchy, String sortMemberLevel, String hierarchySelectedLastLevel){
+    return "with member [Measures].[OrderKey]\n" +
+        "as\n" +
+        "ancestor([" + hierarchy + "].currentmember, [" + hierarchy + "].[" + sortMemberLevel + "]).name\n" +
+        "|| \"#\" ||\n" +
+        "ancestor([" + hierarchy + "].currentmember, [" + hierarchy + "].[" + hierarchySelectedLastLevel + "]).name\n";
   }
 
   private void applyDefaultProperties() {
@@ -490,6 +522,4 @@ public class OlapQuery implements IQuery {
   public Map<String, String> getTotalFunctions() {
     return totalsFunctions;
   }
-
-
 }
