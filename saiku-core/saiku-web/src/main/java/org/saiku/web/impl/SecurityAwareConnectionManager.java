@@ -18,6 +18,7 @@ package org.saiku.web.impl;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -238,7 +239,7 @@ public class SecurityAwareConnectionManager extends AbstractConnectionManager im
 		if (SecurityContextHolder.getContext() != null && SecurityContextHolder.getContext().getAuthentication() != null) {
 			Collection<GrantedAuthority> auths = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
 			for (GrantedAuthority a : auths) {
-				roles.add(a.getAuthority());
+				roles.addAll(Arrays.asList(a.getAuthority().substring(1, a.getAuthority().length() - 1).split(", ")));
 			}
 		}
 		return roles;

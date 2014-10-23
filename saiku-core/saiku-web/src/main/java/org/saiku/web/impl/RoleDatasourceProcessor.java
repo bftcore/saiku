@@ -27,28 +27,28 @@ public class RoleDatasourceProcessor implements IDatasourceProcessor {
 				String[] filterRoles = filter.split(",");
 				allowedRoles.addAll(Arrays.asList(filterRoles));
 			}
-					
-			for (GrantedAuthority ga : SecurityContextHolder.getContext().getAuthentication().getAuthorities()) {
-				String r = ga.getAuthority();
-				boolean isAllowed = true;
-				if (filter != null) {
-					isAllowed = false;
-					for (String allowed : allowedRoles) {
-						if (r.toUpperCase().contains(allowed.toUpperCase())) {
-							isAllowed = true;
-						}
-					}
-				}
-				if (isAllowed) {
-					if (roles == null) {
-						roles =  r;
-					} else {
-						roles += "," + r;
-					}
-				}
-				
-			}
-			String location = ds.getProperties().getProperty("location");
+
+      for (GrantedAuthority ga : SecurityContextHolder.getContext().getAuthentication().getAuthorities()) {
+        for (String r : Arrays.asList(ga.getAuthority().substring(1, ga.getAuthority().length() - 1).split(", "))) {
+          boolean isAllowed = true;
+          if (filter != null) {
+            isAllowed = false;
+            for (String allowed : allowedRoles) {
+              if (r.toUpperCase().contains(allowed.toUpperCase())) {
+                isAllowed = true;
+              }
+            }
+          }
+          if (isAllowed) {
+            if (roles == null) {
+              roles = r;
+            } else {
+              roles += "," + r;
+            }
+          }
+        }
+      }
+      String location = ds.getProperties().getProperty("location");
 			if (!location.endsWith(";")) {
 				location +=";";
 			}

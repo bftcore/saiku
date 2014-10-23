@@ -17,6 +17,7 @@
 package org.saiku.web.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,10 +67,10 @@ public class SessionService implements ISessionService {
 	 * @see org.saiku.web.service.ISessionService#login(javax.servlet.http.HttpServletRequest, java.lang.String, java.lang.String)
 	 */
 	public Map<String, Object> login(HttpServletRequest req, String username, String password ) {
-		if (authenticationManager != null) {
+		if (authenticationManager != null && (SecurityContextHolder.getContext() == null || SecurityContextHolder.getContext().getAuthentication() == null)) {
 			authenticate(req, username, password);
 		}
-		if (SecurityContextHolder.getContext() != null && SecurityContextHolder.getContext().getAuthentication() != null) {			
+		if (SecurityContextHolder.getContext() != null && SecurityContextHolder.getContext().getAuthentication() != null) {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 			Object p = auth.getPrincipal();
 			createSession(auth, username, password);
@@ -109,7 +110,7 @@ public class SessionService implements ISessionService {
 			
 			List<String> roles = new ArrayList<String>();
 			for (GrantedAuthority ga : SecurityContextHolder.getContext().getAuthentication().getAuthorities()) {
-				roles.add(ga.getAuthority());
+				roles.addAll(Arrays.asList(ga.getAuthority().substring(1,ga.getAuthority().length()-1).split(", ")));
 			}
 			session.put("roles", roles);
 			
