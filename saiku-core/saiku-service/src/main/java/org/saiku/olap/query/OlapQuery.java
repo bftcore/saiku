@@ -28,6 +28,7 @@ import org.olap4j.mdx.ParseTreeWriter;
 import org.olap4j.mdx.SelectNode;
 import org.olap4j.metadata.Catalog;
 import org.olap4j.metadata.Cube;
+import org.olap4j.metadata.Dimension;
 import org.olap4j.query.LimitFunction;
 import org.olap4j.query.Query;
 import org.olap4j.query.QueryAxis;
@@ -188,6 +189,9 @@ public class OlapQuery implements IQuery {
     QueryAxis newQueryAxis = query.getAxis( axis );
 
     if (!"Measures".equals(dimension.getName()) && !Axis.FILTER.equals( axis )) {
+      dimension.setHierarchyConsistent( true );
+      dimension.setHierarchizeMode( QueryDimension.HierarchizeMode.PRE );
+    } else {
       dimension.setHierarchyConsistent( false );
       dimension.clearHierarchizeMode();
     }
@@ -287,6 +291,24 @@ public class OlapQuery implements IQuery {
         }
       }
 
+      QueryAxis lines = getAxis(Axis.ROWS);
+      if (getAxis(Axis.ROWS).getSortIdentifierNodeName() != null) {
+        for(QueryDimension dimension : lines.getDimensions()){
+          if(dimension.getInclusions().size() > 1  && getAxis(Axis.ROWS).getSortIdentifierNodeName().contains(dimension.getDimension().getName())){
+            dimension.setHierarchyConsistent( false );
+            dimension.clearHierarchizeMode();
+          }
+        }
+      }
+      lines = getAxis(Axis.COLUMNS);
+      if (getAxis(Axis.COLUMNS).getSortIdentifierNodeName() != null) {
+        for(QueryDimension dimension : lines.getDimensions()){
+          if(dimension.getInclusions().size() > 1  && getAxis(Axis.COLUMNS).getSortIdentifierNodeName().contains(dimension.getDimension().getName())){
+            dimension.setHierarchyConsistent( false );
+            dimension.clearHierarchizeMode();
+          }
+        }
+      }
       String mdx = getMdx();
       log.trace( "Executing query (" + this.getName() + ") :\n" + mdx );
       final Catalog catalog = query.getCube().getSchema().getCatalog();
