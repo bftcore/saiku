@@ -5,11 +5,13 @@ import java.awt.print.PageFormat;
 import java.awt.print.Paper;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
 
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.print.PrintTranscoder;
@@ -115,8 +117,14 @@ public class PdfReport {
             CSSResolver cssResolver = new StyleAttrCSSResolver();
             CssFile cssFile = XMLWorkerHelper.getCSS(getClass().getResourceAsStream("saiku.table.css"));
             cssResolver.addCss(cssFile);
+            ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext();
             // HTML
-            XMLWorkerFontProvider fontProvider = new XMLWorkerFontProvider();
+            XMLWorkerFontProvider fontProvider = null;
+            if(ctx.getResource("classpath:fonts").getFile().exists()){
+              fontProvider = new XMLWorkerFontProvider(ctx.getResource("classpath:fonts").getFile().getAbsolutePath());
+            } else {
+              fontProvider = new XMLWorkerFontProvider();
+            }
             fontProvider.defaultEncoding = "UTF-8";
             CssAppliers cssAppliers = new CssAppliersImpl(fontProvider);
             HtmlPipelineContext htmlContext = new HtmlPipelineContext(cssAppliers);
