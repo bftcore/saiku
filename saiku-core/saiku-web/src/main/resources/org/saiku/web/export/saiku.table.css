@@ -133,5 +133,20 @@ body {
 	font-weight: bold;
 }
 
+.sums_row {
+    border-top-width: 0px;
+    border-right-width: 0px;
+	border-left-width: 1px;
+    border-left-color: #d5d5d5;
+}
+
+.after_sums_row {
+	border-left-width: 0px;
+}
+
+.row_sum {
+	background: rgb(244, 251, 254);
+}
+
 
 

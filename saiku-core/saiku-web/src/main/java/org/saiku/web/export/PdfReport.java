@@ -45,7 +45,7 @@ public class PdfReport {
 	
 	private static final Logger log = LoggerFactory.getLogger(PdfReport.class);
     
-	public byte[] pdf(QueryResult qr, String svg) throws Exception {
+	public byte[] pdf(QueryResult qr, String svg, boolean withSums) throws Exception {
 		
 		int resultWidth = (qr != null && qr.getCellset() != null && qr.getCellset().size() > 0 ? qr.getCellset().get(0).length : 0);
 		if (resultWidth == 0) {
@@ -66,7 +66,7 @@ public class PdfReport {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		PdfWriter writer = PdfWriter.getInstance(document, baos);
 		document.open();			
-		populatePdf(document, writer, qr);
+		populatePdf(document, writer, qr, withSums);
 
 		// do we want to add a svg image?
 		if (StringUtils.isNotBlank(svg)) {
@@ -102,9 +102,9 @@ public class PdfReport {
 		return baos.toByteArray();
 	}
 
-	public void populatePdf(Document doc, PdfWriter writer, QueryResult qr) throws Exception {
+	public void populatePdf(Document doc, PdfWriter writer, QueryResult qr, boolean withSums) throws Exception {
 			Long start = (new Date()).getTime();
-			String content = JSConverter.convertToHtml(qr);
+			String content = JSConverter.convertToHtml(qr, withSums);
 			
 			DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 			Date date = new Date();

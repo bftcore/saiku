@@ -128,7 +128,7 @@ public class ExporterResource {
 			queryResource.createQuery(null,  null,  null, null, fileContent, queryName, null);
 			QueryResult qr = queryResource.execute(queryName, formatter, 0);
 			PdfReport pdf = new PdfReport();
-			byte[] doc  = pdf.pdf(qr, null);
+			byte[] doc  = pdf.pdf(qr, null, true);
 			return Response.ok(doc).type("application/pdf").header(
 					"content-disposition",
 					"attachment; filename = export.pdf").header(

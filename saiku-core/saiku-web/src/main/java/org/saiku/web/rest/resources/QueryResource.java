@@ -371,8 +371,6 @@ public class QueryResource {
 			return Response.serverError().build();
 		}
 	}
-	
-
 
 	@POST
 	@Produces({"application/pdf" })
@@ -381,7 +379,7 @@ public class QueryResource {
 			@PathParam("queryname")  String queryName,
 			@PathParam("svg")  @DefaultValue("") String svg)
 	{
-		return exportPdfWithChartAndFormat(queryName, null, svg);
+		return exportPdfWithChartAndFormat(queryName, null, svg, true);
 	}
 		
 	@GET
@@ -389,26 +387,28 @@ public class QueryResource {
 	@Path("/{queryname}/export/pdf")
 	public Response exportPdf(@PathParam("queryname")  String queryName)
 	{
-		return exportPdfWithChartAndFormat(queryName, null, null);
+		return exportPdfWithChartAndFormat(queryName, null, null, true);
 	}
 
 	@GET
 	@Produces({"application/pdf" })
-	@Path("/{queryname}/export/pdf/{format}")
+	@Path("/{queryname}/export/pdf/{format}/{withSums}")
 	public Response exportPdfWithFormat(
 			@PathParam("queryname")  String queryName,
-			@PathParam("format") String format)
+			@PathParam("format") String format,
+      @PathParam("withSums") boolean withSums)
 	{
-		return exportPdfWithChartAndFormat(queryName, format, null);
+		return exportPdfWithChartAndFormat(queryName, format, null, withSums);
 	}
 	
 	@POST
 	@Produces({"application/pdf" })
-	@Path("/{queryname}/export/pdf/{format}")
+	@Path("/{queryname}/export/pdf/{format}/{withSums}")
 	public Response exportPdfWithChartAndFormat(
 			@PathParam("queryname")  String queryName,
 			@PathParam("format") String format,
-			@FormParam("svg") @DefaultValue("") String svg)
+			@FormParam("svg") @DefaultValue("") String svg,
+      @PathParam("withSums") boolean withSums)
 	{
 		
 		try {
@@ -420,7 +420,7 @@ public class QueryResource {
 			}
 			QueryResult qr = RestUtil.convert(cs);
 			PdfReport pdf = new PdfReport();
-			byte[] doc  = pdf.pdf(qr, svg);
+			byte[] doc  = pdf.pdf(qr, svg, withSums);
 			return Response.ok(doc).type("application/pdf").header(
 					"content-disposition",
 					"attachment; filename = export.pdf").header(

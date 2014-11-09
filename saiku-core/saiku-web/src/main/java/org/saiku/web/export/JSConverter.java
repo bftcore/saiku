@@ -13,17 +13,26 @@ import org.saiku.web.rest.objects.resultset.QueryResult;
 
 public class JSConverter {
 	
-	public static String convertToHtml(QueryResult qr) throws IOException {
+	public static String convertToHtml(QueryResult qr, boolean withSums) throws IOException {
 		ObjectMapper om = new ObjectMapper();
 		StringWriter sw = new StringWriter();
 		Context context = Context.enter();
 		Scriptable globalScope = context.initStandardObjects();
+    Reader formatReader = new InputStreamReader(JSConverter.class.getResourceAsStream("format.20110630-1100.min.js"));
+    context.evaluateReader(globalScope, formatReader, "format.20110630-1100.min.js", 1, null);
+
 		Reader underscoreReader = new InputStreamReader(JSConverter.class.getResourceAsStream("underscore.js"));
 		context.evaluateReader(globalScope, underscoreReader, "underscore.js", 1, null);
 		Reader srReader = new InputStreamReader(JSConverter.class.getResourceAsStream("SaikuRenderer.js"));
 		context.evaluateReader(globalScope, srReader, "SaikuRenderer.js", 1, null);
-		Reader strReader = new InputStreamReader(JSConverter.class.getResourceAsStream("SaikuTableRenderer.js"));
-		context.evaluateReader(globalScope, strReader, "SaikuTableRenderer.js", 1, null);
+    if(withSums){
+      Reader strReader = new InputStreamReader(JSConverter.class.getResourceAsStream("SaikuTableRenderer.js"));
+      context.evaluateReader(globalScope, strReader, "SaikuTableRenderer.js", 1, null);
+    } else {
+      Reader strReader = new InputStreamReader(JSConverter.class.getResourceAsStream("SaikuTableRendererWithoutSums.js"));
+      context.evaluateReader(globalScope, strReader, "SaikuTableRendererWithoutSums.js", 1, null);
+    }
+
 
 		String data = om.writeValueAsString(qr);
 		Object wrappedQr = Context.javaToJS(data, globalScope);
