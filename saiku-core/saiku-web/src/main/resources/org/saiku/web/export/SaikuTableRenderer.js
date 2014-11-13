@@ -59,6 +59,16 @@ function findSum(data, row, col, measureColumn){
   return format('# ##0,00', sum);
 }
 
+function firstColumnsSum(data, measureColumn){
+  var sum = 0.00;
+  var row = 0;
+  while (row < data.length) {
+    sum += Number(data[row][measureColumn].value.replace(/[^0-9\,-]/g, '').replace(',', '.'));
+    row++;
+  }
+  return format('# ##0,00', sum);
+}
+
 SaikuTableRenderer.prototype.internalRender = function(data, options) {
     var contents = "";
     var table = data ? data : [];
@@ -259,6 +269,53 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
             contents +='</thead><tbody>';
         }
 
+    }
+    contents += "<tr>";
+    if (measuresCount > 0) {
+      prevColumnSum = table[table.length - 1].length - measuresCount - 2;
+      col = 0;
+      // Необходимо добавить последние итоги
+      if (col < prevColumnSum) {
+        //Здесь необходим цикл для всех колонок, что вывестись раньше должны !!!!!
+        for (var o = col; o < prevColumnSum; o++) {
+          contents += '<th class="row_null"></th>'
+        }
+        //Находим сумму всех значений по колонкам с мерами, заканчивая строкой row, двигаясь в обратном направлении, причем разыскивая предыдущую row с отличающимся названием в col
+        contents += '<th class="row sums_row" >' + 'Итого' + '</th><th class="row after_sums_row" colspan="' + (table[table.length - 1].length - prevColumnSum - measuresCount - 1) + '"' + '></th>';
+        for (z = 0; z < measuresCount; z++) {
+          contents += '<td class="data"><div>' + findSum(data, table.length - 1, prevColumnSum, table[table.length - 1].length - measuresCount + z) + '</div></td>';
+        }
+        contents += '</tr><tr>';
+        prevColumnSum--;
+        while (col < prevColumnSum) {
+          for (var z = 0; z < prevColumnSum; z++) {
+            contents += '<th class="row_null"></th>'
+          }
+          contents += '<th class="row sums_row">' + 'Итого' + '</th><th class="row after_sums_row" colspan="' + (table[table.length - 1].length - prevColumnSum - measuresCount - 1) + '"' + '></th>';
+          for (z = 0; z < measuresCount; z++) {
+            contents += '<td class="data"><div>' + findSum(data, table.length - 1, prevColumnSum, table[table.length - 1].length - measuresCount + z) + '</div></td>';
+          }
+          contents += '</tr><tr>';
+          prevColumnSum--;
+        }
+        for (var z = 0; z < col; z++) {
+          contents += '<th class="row_null"></th>'
+        }
+      }
+      contents += "</tr><tr>"
+      if (table[table.length - 1].length - measuresCount > 1) {
+        contents += '<th class="row sums_row" >' + 'Итого' + '</th><th class="row after_sums_row " colspan="' + (table[table.length - 1].length - measuresCount - 1) + '"' + '></th>';
+        for (z = 0; z < measuresCount; z++) {
+          contents += '<td class="data"><div>' + findSum(data, table.length - 1, 0, table[table.length - 1].length - measuresCount + z) + '</div></td>';
+        }
+      }
+      contents += "</tr><tr>"
+      // Общая сумма по 1 колонке
+      contents += '<th style="border-top:1px solid #d5d5d5;" class="row sums_row" colspan="' + (table[table.length - 1].length - measuresCount) + '">Итого для измерения ' + data[0][0].value + '</th>';
+      for (z = 0; z < measuresCount; z++) {
+        contents += '<td class="data"><div>' + firstColumnsSum(data, table[table.length - 1].length - measuresCount + z) + '</div></td>';
+      }
+      contents += "</tr>"
     }
     return "<table id='results_table'>" + contents + "</tbody></table>";
 }
