@@ -29,23 +29,24 @@ import java.util.List;
 
 public class ExcelExporter {
 
-  public static byte[] exportExcel( CellSet cellSet, List<SaikuDimensionSelection> filters ) {
-    return exportExcel( cellSet, new HierarchicalCellSetFormatter(), filters );
+  public static byte[] exportExcel( CellSet cellSet, List<SaikuDimensionSelection> filters, boolean show_sums) {
+    return exportExcel( cellSet, new HierarchicalCellSetFormatter(), filters, show_sums);
   }
 
   public static byte[] exportExcel( CellSet cellSet,
                                     ICellSetFormatter formatter,
-                                    List<SaikuDimensionSelection> filters ) {
+                                    List<SaikuDimensionSelection> filters,
+                                    boolean show_sums) {
     CellDataSet table = OlapResultSetUtil.cellSet2Matrix( cellSet, formatter );
     ExcelBuilderOptions exb = new ExcelBuilderOptions();
     exb.repeatValues = ( formatter instanceof FlattenedCellSetFormatter );
-    return getExcel( table, filters, exb );
+    return getExcel( table, filters, exb, show_sums);
   }
 
   private static byte[] getExcel( CellDataSet table, List<SaikuDimensionSelection> filters,
-                                  ExcelBuilderOptions options ) {
+                                  ExcelBuilderOptions options, boolean show_sums) {
     // TBD Sheet name is parametric. Useful for future ideas or improvements
-    ExcelWorksheetBuilder worksheetBuilder = new ExcelWorksheetBuilder( table, filters, options );
+    ExcelWorksheetBuilder worksheetBuilder = new ExcelWorksheetBuilder( table, filters, options, show_sums);
     return worksheetBuilder.build();
   }
 }

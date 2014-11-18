@@ -52,6 +52,7 @@ public class ExcelWorksheetBuilder {
 
   private int maxRows = -1;
   private int maxColumns = -1;
+  private boolean show_sums = true;
 
 
   private AbstractBaseCell[][] rowsetHeader;
@@ -79,12 +80,12 @@ public class ExcelWorksheetBuilder {
   private static final Logger log = LoggerFactory.getLogger( ExcelWorksheetBuilder.class );
 
   public ExcelWorksheetBuilder( CellDataSet table, List<SaikuDimensionSelection> filters,
-                                ExcelBuilderOptions options ) {
-    init( table, filters, options );
+                                ExcelBuilderOptions options, boolean show_sums ) {
+    init( table, filters, options, show_sums);
   }
 
-  protected void init( CellDataSet table, List<SaikuDimensionSelection> filters, ExcelBuilderOptions options ) {
-
+  protected void init( CellDataSet table, List<SaikuDimensionSelection> filters, ExcelBuilderOptions options, boolean show_sums ) {
+    this.show_sums = show_sums;
     this.options = options;
     queryFilters = filters;
     maxRows = SpreadsheetVersion.EXCEL2007.getMaxRows();
@@ -221,7 +222,7 @@ public class ExcelWorksheetBuilder {
       }
     }
     Long end = ( new Date() ).getTime();
-    log.debug( "Autosizing: " + ( end - start ) + "ms" );
+    log.debug("Autosizing: " + (end - start) + "ms");
     // Freeze the header columns
     int headerWidth = rowsetHeader.length;
     workbookSheet.createFreezePane( 0, startRow + headerWidth, 0, startRow + headerWidth );
@@ -316,7 +317,6 @@ public class ExcelWorksheetBuilder {
     Row sheetRow = null;
     Cell cell = null;
     String formatString = null;
-
     if ( ( startingRow + rowsetBody.length ) > maxRows ) {
       log.warn(
         "Excel sheet is truncated, only outputting " + maxRows + " rows of " + ( rowsetBody.length + startingRow ) );
@@ -325,8 +325,20 @@ public class ExcelWorksheetBuilder {
       log.warn(
         "Excel sheet is truncated, only outputting " + maxColumns + " columns of " + ( rowsetBody[ 0 ].length ) );
     }
-
-    for ( int x = 0; ( x + startingRow ) < maxRows && x < rowsetBody.length; x++ ) {
+    int measuresCount = 0;
+    for(int i = 0 ; i < rowsetHeader[0].length; i++){
+      if("Measures".equals(rowsetHeader[0][i].getParentDimension()) && !"MeasuresLevel".equals(rowsetHeader[0][i].getFormattedValue())){
+        measuresCount++;
+      }
+    }
+    AbstractBaseCell[][] rowsetBody2 = new AbstractBaseCell[rowsetBody.length + 1][];
+    for (int i = 0; i < rowsetBody.length; i++) {
+      rowsetBody2[i] = new AbstractBaseCell[rowsetBody[i].length];
+      System.arraycopy(rowsetBody[i], 0, rowsetBody2[i], 0, rowsetBody[i].length);
+    }
+    rowsetBody2[rowsetBody.length] = new AbstractBaseCell[rowsetBody[rowsetBody.length - 1].length];
+    rowsetBody = rowsetBody2;
+    for ( int x = 0; ( x + startingRow ) < maxRows && x < rowsetBody.length - 1; x++ ) {
 
       sheetRow = workbookSheet.createRow( (int) x + startingRow );
       for ( int y = 0; y < maxColumns && y < rowsetBody[ x ].length; y++ ) {
@@ -347,7 +359,107 @@ public class ExcelWorksheetBuilder {
           cell.setCellValue( value );
         }
       }
+      if (this.show_sums && measuresCount > 0) {
+        for (int y = rowsetBody[x + 1].length - measuresCount - 2; y >= 0; y--) {
+          if (rowsetBody[x + 1][y] == null || !rowsetBody[x + 1][y].getFormattedValue().equals(rowsetBody[x][y].getFormattedValue())) {
+            startingRow++;
+            sheetRow = workbookSheet.createRow((int) x + startingRow);
+            // creating style for data and string cells
+            CellStyle cellStyle = excelWorkbook.createCellStyle();
+            setCellBordersColor(cellStyle);
+            cellStyle.setFillForegroundColor((short) (30 + y));
+            cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+            cellStyle.setAlignment(CellStyle.ALIGN_LEFT);
+
+            CellStyle dataCellStyle = excelWorkbook.createCellStyle();
+            setCellBordersColor(dataCellStyle);
+            dataCellStyle.setFillForegroundColor((short) (30 + y));
+            dataCellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+            dataCellStyle.setAlignment(CellStyle.ALIGN_LEFT);
+            dataCellStyle.setAlignment(CellStyle.ALIGN_RIGHT);
+            DataFormat fmt = excelWorkbook.createDataFormat();
+            short dataFormat = fmt.getFormat(SaikuProperties.webExportExcelDefaultNumberFormat);
+            dataCellStyle.setDataFormat(dataFormat);
+            for (int i = 0; i < rowsetBody[x].length; i++) {
+              cell = sheetRow.createCell(i);
+              if (i == y) {
+                cell.setCellValue("Итого для: " + rowsetBody[x][y].getFormattedValue());
+                cell.setCellStyle(cellStyle);
+              } else if (i > rowsetBody[x].length - measuresCount - 1) {
+                cell.setCellStyle(dataCellStyle);
+                cell.setCellValue(getItogoForMeasure(rowsetBody, x, y, i));
+              } else if (i > y) {
+                cell.setCellValue("");
+                cell.setCellStyle(cellStyle);
+              } else {
+                cell.setCellValue("");
+                cell.setCellStyle(basicCS);
+              }
+            }
+          }
+        }
+      }
     }
+    if (this.show_sums && measuresCount > 0) {
+      //Выводим итоги по самому первому измерению
+      sheetRow = workbookSheet.createRow(startingRow + rowsetBody.length - 1);
+      // creating style for data and string cells
+      CellStyle cellStyle = excelWorkbook.createCellStyle();
+      setCellBordersColor(cellStyle);
+      cellStyle.setFillForegroundColor((short) (29));
+      cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+      cellStyle.setAlignment(CellStyle.ALIGN_LEFT);
+
+      CellStyle dataCellStyle = excelWorkbook.createCellStyle();
+      setCellBordersColor(dataCellStyle);
+      dataCellStyle.setFillForegroundColor((short) (29));
+      dataCellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+      dataCellStyle.setAlignment(CellStyle.ALIGN_LEFT);
+      dataCellStyle.setAlignment(CellStyle.ALIGN_RIGHT);
+      DataFormat fmt = excelWorkbook.createDataFormat();
+      short dataFormat = fmt.getFormat(SaikuProperties.webExportExcelDefaultNumberFormat);
+      dataCellStyle.setDataFormat(dataFormat);
+      int y = 0;
+      int x = rowsetBody.length - 1;
+      for (int i = 0; i < rowsetBody[x].length; i++) {
+        cell = sheetRow.createCell(i);
+        if (i == y) {
+          cell.setCellValue("Итого для измерения: " + rowsetHeader[0][0].getFormattedValue());
+          cell.setCellStyle(cellStyle);
+        } else if (i > rowsetBody[x].length - measuresCount - 1) {
+          cell.setCellStyle(dataCellStyle);
+          cell.setCellValue(getItogoForFirstcolumn(rowsetBody, i));
+        } else if (i > y) {
+          cell.setCellValue("");
+          cell.setCellStyle(cellStyle);
+        } else {
+          cell.setCellValue("");
+          cell.setCellStyle(basicCS);
+        }
+      }
+    }
+  }
+
+  private double getItogoForMeasure(AbstractBaseCell[][] body, int currentRow, int currentCol, int measureColumn) {
+    double sum = 0;
+    int rowMoveIndex = currentRow;
+    while (rowMoveIndex >= 0 && body[currentRow][currentCol].getFormattedValue().equals(body[rowMoveIndex][currentCol].getFormattedValue())) {
+      Number numberValue = ((DataCell) rowsetBody[rowMoveIndex][measureColumn]).getRawNumber();
+      sum += numberValue == null ? 0 : numberValue.doubleValue();
+      rowMoveIndex--;
+    }
+    return sum;
+  }
+
+  private double getItogoForFirstcolumn(AbstractBaseCell[][] body, int measureColumn) {
+    double sum = 0;
+    int rowMoveIndex = 0;
+    while (rowMoveIndex < body.length-2) {
+      Number numberValue = ((DataCell) rowsetBody[rowMoveIndex][measureColumn]).getRawNumber();
+      sum += numberValue == null ? 0 : numberValue.doubleValue();
+      rowMoveIndex++;
+    }
+    return sum;
   }
 
   protected void applyCellFormatting( Cell cell, int x, int y ) {

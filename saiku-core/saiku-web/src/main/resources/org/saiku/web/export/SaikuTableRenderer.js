@@ -61,7 +61,7 @@ function findSum(data, row, col, measureColumn){
     firstRow--;
   }
   if(data[1][measureColumn].value.indexOf('.') > 0 && data[1][measureColumn].value.indexOf(',') > 0){
-    return format('#,###0.00', sum);
+    return format('#,##0.00', sum);
   } else {
     return format('# ##0,00', sum);
   }
@@ -79,7 +79,7 @@ function firstColumnsSum(data, measureColumn, lastHeaderRow){
     row++;
   }
   if(data[1][measureColumn].value.indexOf('.') > 0 && data[1][measureColumn].value.indexOf(',') > 0){
-    return format('#,###0.00', sum);
+    return format('#,##0.00', sum);
   } else {
     return format('# ##0,00', sum);
   }
@@ -139,7 +139,7 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
                     if (header.value == "null") {
                         contents += '<th class="col_null"><div>&nbsp;</div></th>';
                     } else {
-                      contents += '<th class="col" style="text-align: center;" colspan="' + colSpan + '" title="' + header.value + '"><div rel="' + row + ":" + col +'">' + header.value + '</div></th>';
+                      contents += '<th class="col" style="text-align: center;" colspan="' + colSpan + '"><div rel="' + row + ":" + col +'">' + header.value + '</div></th>';
                     }
                     
                 } else {
@@ -152,7 +152,7 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
                         if (header.value == "null") {
                             contents += '<th class="col_null" colspan="' + colSpan + '"><div>&nbsp;</div></th>';
                         } else {
-                            contents += '<th class="col" style="text-align: center;" colspan="' + (colSpan == 0 ? 1 : colSpan) + '" title="' + header.value + '"><div rel="' + row + ":" + col +'">' + header.value + '</div></th>';
+                            contents += '<th class="col" style="text-align: center;" colspan="' + (colSpan == 0 ? 1 : colSpan) + '"><div rel="' + row + ":" + col +'">' + header.value + '</div></th>';
                         }
                         colSpan = 1;
                     } else {
@@ -200,7 +200,7 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
                 }
                 // бежим с конца строки и провреяем, не должны ли мы вынести сумму
                 // Не совпадает предыдущим загловоком, значит надо посчитать сумму
-                if(!same && row > lastHeaderRow && col < (colLen - measuresCount - 1) && lastRenderedRow != row){
+                if(!same && row > lastHeaderRow && col < (colLen - measuresCount - 1) && lastRenderedRow != row && measuresCount > 0){
 
                   // Первоначально необходимо завершить предыдущие блоки, в случае если они были левее
                   if(col < prevColumnSum){
@@ -289,8 +289,8 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
         }
 
     }
-    contents += "<tr>";
     if (measuresCount > 0) {
+      contents += "<tr>";
       prevColumnSum = table[table.length - 1].length - measuresCount - 2;
       col = 0;
       // Необходимо добавить последние итоги

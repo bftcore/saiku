@@ -306,6 +306,30 @@ public class QueryResource {
 
 	}
 
+  @GET
+  @Produces({"application/vnd.ms-excel" })
+  @Path("/{queryname}/export/xls/{show_sums}/{format}")
+  public Response getQueryExcelExport(
+      @PathParam("queryname") String queryName,
+      @PathParam("show_sums") boolean show_sums,
+      @PathParam("format") @DefaultValue("flattened") String format){
+    if (log.isDebugEnabled()) {
+      log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/xls/\tGET");
+    }
+    try {
+      byte[] doc = olapQueryService.getExport(queryName,"xls", format, show_sums);
+      String name = SaikuProperties.webExportExcelName + "." + SaikuProperties.webExportExcelFormat;
+      return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
+          "content-disposition",
+          "attachment; filename = " + name).header(
+          "content-length",doc.length).build();
+    }
+    catch (Exception e) {
+      log.error("Cannot get excel for query (" + queryName + ")",e);
+      return Response.serverError().build();
+    }
+  }
+
 	@GET
 	@Produces({"application/vnd.ms-excel" })
 	@Path("/{queryname}/export/xls")
@@ -313,7 +337,7 @@ public class QueryResource {
 		if (log.isDebugEnabled()) {
 			log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/xls/\tGET");
 		}
-		return getQueryExcelExport(queryName, "flattened");
+		return getQueryExcelExport(queryName,"flattened");
 	}
 
 	@GET
@@ -326,7 +350,7 @@ public class QueryResource {
 			log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/xls/"+format+"\tGET");
 		}
 		try {
-			byte[] doc = olapQueryService.getExport(queryName,"xls",format);
+			byte[] doc = olapQueryService.getExport(queryName,"xls",format, false);
 			String name = SaikuProperties.webExportExcelName + "." + SaikuProperties.webExportExcelFormat;
 			return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
 					"content-disposition",
@@ -359,7 +383,7 @@ public class QueryResource {
 			log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/csv/"+format+"\tGET");
 		}
 		try {
-			byte[] doc = olapQueryService.getExport(queryName,"csv",format);
+			byte[] doc = olapQueryService.getExport(queryName,"csv",format, false);
 			String name = SaikuProperties.webExportCsvName;
 			return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
 					"content-disposition",
