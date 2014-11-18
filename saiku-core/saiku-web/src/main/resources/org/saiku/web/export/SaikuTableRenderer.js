@@ -53,20 +53,36 @@ function findSum(data, row, col, measureColumn){
   var sum = 0.00;
   var firstRow = row;
   while (data[row][col].value == data[firstRow][col].value) {
-    sum += Number(data[firstRow][measureColumn].value.replace(/[^0-9\,-]/g, '').replace(',', '.'));
+    if(data[firstRow][measureColumn].value.indexOf('.') > 0 && data[firstRow][measureColumn].value.indexOf(',') > 0){
+      sum += Number(data[firstRow][measureColumn].value.replace(/[^-0-9\.-]/g,""));
+    } else {
+      sum += Number(data[firstRow][measureColumn].value.replace(/[^0-9\,-]/g, '').replace(',', '.'));
+    }
     firstRow--;
   }
-  return format('# ##0,00', sum);
+  if(data[1][measureColumn].value.indexOf('.') > 0 && data[1][measureColumn].value.indexOf(',') > 0){
+    return format('#,###0.00', sum);
+  } else {
+    return format('# ##0,00', sum);
+  }
 }
 
-function firstColumnsSum(data, measureColumn){
+function firstColumnsSum(data, measureColumn, lastHeaderRow){
   var sum = 0.00;
-  var row = 0;
+  var row = lastHeaderRow;
   while (row < data.length) {
-    sum += Number(data[row][measureColumn].value.replace(/[^0-9\,-]/g, '').replace(',', '.'));
+    if(data[row][measureColumn].value.indexOf('.') > 0 && data[row][measureColumn].value.indexOf(',') > 0){
+      sum += Number(data[row][measureColumn].value.replace(/[^-0-9\.-]/g,""));
+    } else {
+      sum += Number(data[row][measureColumn].value.replace(/[^0-9\,-]/g, '').replace(',', '.'));
+    }
     row++;
   }
-  return format('# ##0,00', sum);
+  if(data[1][measureColumn].value.indexOf('.') > 0 && data[1][measureColumn].value.indexOf(',') > 0){
+    return format('#,###0.00', sum);
+  } else {
+    return format('# ##0,00', sum);
+  }
 }
 
 SaikuTableRenderer.prototype.internalRender = function(data, options) {
@@ -87,6 +103,7 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
     var itogRowExists = false;
     var prevColumnSum;
     var measuresCount = 0;
+    var lastHeaderRow = 1000;
 
     for (var row = 0, rowLen = table.length; row < rowLen; row++) {
         colSpan = 1;
@@ -113,8 +130,9 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
                     isLastColumn = true;
                 else
                     nextHeader = data[row][col+1];
-
-                measuresCount++;
+                if(header.properties.dimension == 'Measures'){
+                  measuresCount++;
+                }
 
                 if (isLastColumn) {
                     // Last column in a row...
@@ -182,7 +200,7 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
                 }
                 // бежим с конца строки и провреяем, не должны ли мы вынести сумму
                 // Не совпадает предыдущим загловоком, значит надо посчитать сумму
-                if(!same && row > 1 && col < (colLen - measuresCount - 1) && lastRenderedRow != row){
+                if(!same && row > lastHeaderRow && col < (colLen - measuresCount - 1) && lastRenderedRow != row){
 
                   // Первоначально необходимо завершить предыдущие блоки, в случае если они были левее
                   if(col < prevColumnSum){
@@ -267,6 +285,7 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
         contents += "</tr>";
         if(isLastColumn && isHeaderLowestLvl && header.value!="null"){
             contents +='</thead><tbody>';
+            lastHeaderRow = row + 1;
         }
 
     }
@@ -311,9 +330,11 @@ SaikuTableRenderer.prototype.internalRender = function(data, options) {
       }
       contents += "</tr><tr>"
       // Общая сумма по 1 колонке
-      contents += '<th style="border-top:1px solid #d5d5d5;" class="row sums_row" colspan="' + (table[table.length - 1].length - measuresCount) + '">Итого для измерения ' + data[0][0].value + '</th>';
-      for (z = 0; z < measuresCount; z++) {
-        contents += '<td class="data"><div>' + firstColumnsSum(data, table[table.length - 1].length - measuresCount + z) + '</div></td>';
+      if (data[0][0].value != 'null') {
+        contents += '<th style="border-top:1px solid #d5d5d5;" class="row sums_row" colspan="' + (table[table.length - 1].length - measuresCount) + '">Итого для измерения ' + data[0][0].value + '</th>';
+        for (z = 0; z < measuresCount; z++) {
+          contents += '<td class="data"><div>' + firstColumnsSum(data, table[table.length - 1].length - measuresCount + z, lastHeaderRow) + '</div></td>';
+        }
       }
       contents += "</tr>"
     }
