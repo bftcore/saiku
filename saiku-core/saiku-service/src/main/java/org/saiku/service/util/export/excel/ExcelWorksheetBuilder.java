@@ -367,13 +367,13 @@ public class ExcelWorksheetBuilder {
             // creating style for data and string cells
             CellStyle cellStyle = excelWorkbook.createCellStyle();
             setCellBordersColor(cellStyle);
-            cellStyle.setFillForegroundColor((short) (30 + y));
+            cellStyle.setFillForegroundColor((short) (40 + y));
             cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
             cellStyle.setAlignment(CellStyle.ALIGN_LEFT);
 
             CellStyle dataCellStyle = excelWorkbook.createCellStyle();
             setCellBordersColor(dataCellStyle);
-            dataCellStyle.setFillForegroundColor((short) (30 + y));
+            dataCellStyle.setFillForegroundColor((short) (40 + y));
             dataCellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
             dataCellStyle.setAlignment(CellStyle.ALIGN_LEFT);
             dataCellStyle.setAlignment(CellStyle.ALIGN_RIGHT);
