@@ -104,7 +104,7 @@ public class OlapDiscoverResource implements Serializable {
     @Path("/{connection}/refresh")
      public List<SaikuConnection> refreshConnection( @PathParam("connection") String connectionName) {
     	try {
-			olapDiscoverService.refreshConnection(connectionName);
+			  olapDiscoverService.refreshConnection(connectionName);
 			return olapDiscoverService.getConnection(connectionName);
 		} catch (Exception e) {
 			log.error(this.getClass().getName(),e);

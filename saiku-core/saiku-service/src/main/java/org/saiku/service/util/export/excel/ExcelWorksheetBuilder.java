@@ -68,6 +68,7 @@ public class ExcelWorksheetBuilder {
   private CellStyle darkerHeaderCellCS;
   private List<SaikuDimensionSelection> queryFilters;
   private Map<String, Integer> colorCodesMap;
+  private String saikuQueryName;
 
   private int nextAvailableColorCode = 41;
   private Properties cssColorCodesProperties;
@@ -79,14 +80,15 @@ public class ExcelWorksheetBuilder {
 
   private static final Logger log = LoggerFactory.getLogger( ExcelWorksheetBuilder.class );
 
-  public ExcelWorksheetBuilder( CellDataSet table, List<SaikuDimensionSelection> filters,
+  public ExcelWorksheetBuilder( String saikuQueryName, CellDataSet table, List<SaikuDimensionSelection> filters,
                                 ExcelBuilderOptions options, boolean show_sums ) {
-    init( table, filters, options, show_sums);
+    init( saikuQueryName, table, filters, options, show_sums);
   }
 
-  protected void init( CellDataSet table, List<SaikuDimensionSelection> filters, ExcelBuilderOptions options, boolean show_sums ) {
+  protected void init( String saikuQueryName, CellDataSet table, List<SaikuDimensionSelection> filters, ExcelBuilderOptions options, boolean show_sums ) {
     this.show_sums = show_sums;
     this.options = options;
+    this.saikuQueryName = saikuQueryName;
     queryFilters = filters;
     maxRows = SpreadsheetVersion.EXCEL2007.getMaxRows();
     maxColumns = SpreadsheetVersion.EXCEL2007.getMaxColumns();
@@ -599,6 +601,12 @@ public class ExcelWorksheetBuilder {
     String nextHeader = EMPTY_STRING;
     String currentHeader = EMPTY_STRING;
     ArrayList<ExcelMergedRegionItemConfig> mergedItemsConfig = new ArrayList<ExcelMergedRegionItemConfig>();
+
+    sheetRow = workbookSheet.createRow( startRow );
+    Cell saikuQueryNameCell = sheetRow.createCell(0);
+    saikuQueryNameCell.setCellValue(saikuQueryName.toUpperCase());
+    saikuQueryNameCell.setCellStyle(darkerHeaderCellCS);
+    startRow++;
 
     for ( x = 0; x < rowsetHeader.length; x++ ) {
 

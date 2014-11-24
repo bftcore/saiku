@@ -44,9 +44,9 @@ import com.itextpdf.tool.xml.pipeline.html.HtmlPipelineContext;
 public class PdfReport {
 	
 	private static final Logger log = LoggerFactory.getLogger(PdfReport.class);
-    
-	public byte[] pdf(QueryResult qr, String svg, boolean withSums) throws Exception {
-		
+  private String saikuQueryName;
+	public byte[] pdf(String saikuQueryName, QueryResult qr, String svg, boolean withSums) throws Exception {
+		this.saikuQueryName = saikuQueryName;
 		int resultWidth = (qr != null && qr.getCellset() != null && qr.getCellset().size() > 0 ? qr.getCellset().get(0).length : 0);
 		if (resultWidth == 0) {
 			throw new SaikuServiceException("Cannot convert empty result to PDF");
@@ -108,7 +108,7 @@ public class PdfReport {
 			
 			DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 			Date date = new Date();
-			content = "<p>" + "Saiku Export - " + dateFormat.format(date) + "</p><p>&nbsp;</p>" + content;
+      content = "<p>" + this.saikuQueryName + " " + dateFormat.format(date) + "</p><p>&nbsp;</p>" + content;
 			
 			
 			InputStream contentIs = new ByteArrayInputStream(content.getBytes("UTF-8"));

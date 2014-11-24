@@ -1111,31 +1111,35 @@ public class OlapQueryService implements Serializable {
     }
 
     public byte[] getExport(String queryName, String type) {
-      return getExport(queryName,type,new FlattenedCellSetFormatter(), false);
+      return getExport(queryName, "", type, new FlattenedCellSetFormatter(), false);
     }
 
     public byte[] getExport(String queryName, String type, boolean show_sums) {
-        return getExport(queryName,type, new FlattenedCellSetFormatter(), show_sums);
+        return getExport(queryName,"", type, new FlattenedCellSetFormatter(), show_sums);
     }
 
-    public byte[] getExport(String queryName, String type, String formatter, boolean show_sums) {
+    public byte [] getExport(String queryName, String type, String formatter, boolean show_sums){
+      return getExport(queryName, "", type, formatter, show_sums);
+    }
+
+    public byte[] getExport(String queryName, String saikuQueryName, String type, String formatter, boolean show_sums) {
         formatter = formatter == null ? "" : formatter.toLowerCase();
         if (formatter.equals("flat")) {
             return getExport(queryName, type, new CellSetFormatter());
         }else if (formatter.equals("flattened")) {
-            return getExport(queryName, type, new FlattenedCellSetFormatter(), show_sums);
+            return getExport(queryName, saikuQueryName, type, new FlattenedCellSetFormatter(), show_sums);
         } else if (formatter.equals("hierarchical")) {
             return getExport(queryName, type, new HierarchicalCellSetFormatter());
         }
 
-        return getExport(queryName, type, new FlattenedCellSetFormatter(), show_sums);
+        return getExport(queryName, saikuQueryName, type, new FlattenedCellSetFormatter(), show_sums);
     }
 
     public byte[] getExport(String queryName, String type, ICellSetFormatter formatter) {
-      return getExport(queryName, type, formatter, false);
+      return getExport(queryName, "", type, formatter, false);
     }
 
-    public byte[] getExport(String queryName, String type, ICellSetFormatter formatter, boolean show_sums) {
+    public byte[] getExport(String queryName, String saikuQueryName, String type, ICellSetFormatter formatter, boolean show_sums) {
         if (type != null) {
             IQuery query = getIQuery(queryName);
             CellSet rs = query.getCellset();
@@ -1145,7 +1149,7 @@ public class OlapQueryService implements Serializable {
                 filters = getAxisSelection(queryName, "FILTER");
             }
             if (type.toLowerCase().equals("xls")) {
-                return ExcelExporter.exportExcel(rs, formatter, filters, show_sums);
+                return ExcelExporter.exportExcel(saikuQueryName, rs, formatter, filters, show_sums);
             }
             if (type.toLowerCase().equals("csv")) {
                 return CsvExporter.exportCsv(rs, SaikuProperties.webExportCsvDelimiter, SaikuProperties.webExportCsvTextEscape, formatter);

@@ -308,16 +308,17 @@ public class QueryResource {
 
   @GET
   @Produces({"application/vnd.ms-excel" })
-  @Path("/{queryname}/export/xls/{show_sums}/{format}")
+  @Path("/{queryname}/export/xls/{saikuQueryName}/{show_sums}/{format}")
   public Response getQueryExcelExport(
       @PathParam("queryname") String queryName,
+      @PathParam("saikuQueryName") String saikuQueryName,
       @PathParam("show_sums") boolean show_sums,
       @PathParam("format") @DefaultValue("flattened") String format){
     if (log.isDebugEnabled()) {
       log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/xls/\tGET");
     }
     try {
-      byte[] doc = olapQueryService.getExport(queryName,"xls", format, show_sums);
+      byte[] doc = olapQueryService.getExport(queryName, saikuQueryName,"xls", format, show_sums);
       String name = SaikuProperties.webExportExcelName + "." + SaikuProperties.webExportExcelFormat;
       return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
           "content-disposition",
@@ -403,7 +404,7 @@ public class QueryResource {
 			@PathParam("queryname")  String queryName,
 			@PathParam("svg")  @DefaultValue("") String svg)
 	{
-		return exportPdfWithChartAndFormat(queryName, null, svg, true);
+		return exportPdfWithChartAndFormat(queryName, "", null, svg, true);
 	}
 		
 	@GET
@@ -411,8 +412,20 @@ public class QueryResource {
 	@Path("/{queryname}/export/pdf")
 	public Response exportPdf(@PathParam("queryname")  String queryName)
 	{
-		return exportPdfWithChartAndFormat(queryName, null, null, true);
+		return exportPdfWithChartAndFormat(queryName, "", null, null, true);
 	}
+
+  @GET
+  @Produces({"application/pdf" })
+  @Path("/{queryname}/export/pdf/{saikuQueryName}/{format}/{withSums}")
+  public Response exportPdfWithFormat(
+      @PathParam("queryname")  String queryName,
+      @PathParam("saikuQueryName") String saikuQueryName,
+      @PathParam("format") String format,
+      @PathParam("withSums") boolean withSums)
+  {
+    return exportPdfWithChartAndFormat(queryName, saikuQueryName, format, null, withSums);
+  }
 
 	@GET
 	@Produces({"application/pdf" })
@@ -422,14 +435,15 @@ public class QueryResource {
 			@PathParam("format") String format,
       @PathParam("withSums") boolean withSums)
 	{
-		return exportPdfWithChartAndFormat(queryName, format, null, withSums);
+		return exportPdfWithChartAndFormat(queryName, "", format, null, withSums);
 	}
 	
 	@POST
 	@Produces({"application/pdf" })
-	@Path("/{queryname}/export/pdf/{format}/{withSums}")
+	@Path("/{queryname}/export/pdf/{saikuQueryName}/{format}/{withSums}/{svg}")
 	public Response exportPdfWithChartAndFormat(
 			@PathParam("queryname")  String queryName,
+      @PathParam("saikuQueryName") String saikuQueryName,
 			@PathParam("format") String format,
 			@FormParam("svg") @DefaultValue("") String svg,
       @PathParam("withSums") boolean withSums)
@@ -444,7 +458,7 @@ public class QueryResource {
 			}
 			QueryResult qr = RestUtil.convert(cs);
 			PdfReport pdf = new PdfReport();
-			byte[] doc  = pdf.pdf(qr, svg, withSums);
+			byte[] doc  = pdf.pdf(saikuQueryName, qr, svg, withSums);
 			return Response.ok(doc).type("application/pdf").header(
 					"content-disposition",
 					"attachment; filename = export.pdf").header(
