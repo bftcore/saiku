@@ -29,7 +29,7 @@ import java.util.List;
 
 public class ExcelExporter {
 
-  public static byte[] exportExcel(String saikuQueryName, CellSet cellSet, List<SaikuDimensionSelection> filters, boolean show_sums) {
+  public static byte[] exportExcel(String saikuQueryName, CellSet cellSet, List<SaikuDimensionSelection> filters, int show_sums) {
     return exportExcel( saikuQueryName, cellSet, new HierarchicalCellSetFormatter(), filters, show_sums);
   }
 
@@ -37,7 +37,7 @@ public class ExcelExporter {
                                     CellSet cellSet,
                                     ICellSetFormatter formatter,
                                     List<SaikuDimensionSelection> filters,
-                                    boolean show_sums) {
+                                    int show_sums) {
     CellDataSet table = OlapResultSetUtil.cellSet2Matrix( cellSet, formatter );
     ExcelBuilderOptions exb = new ExcelBuilderOptions();
     exb.repeatValues = ( formatter instanceof FlattenedCellSetFormatter );
@@ -45,7 +45,7 @@ public class ExcelExporter {
   }
 
   private static byte[] getExcel( String saikuQueryName, CellDataSet table, List<SaikuDimensionSelection> filters,
-                                  ExcelBuilderOptions options, boolean show_sums) {
+                                  ExcelBuilderOptions options, int show_sums) {
     // TBD Sheet name is parametric. Useful for future ideas or improvements
     ExcelWorksheetBuilder worksheetBuilder = new ExcelWorksheetBuilder( saikuQueryName, table, filters, options, show_sums);
     return worksheetBuilder.build();

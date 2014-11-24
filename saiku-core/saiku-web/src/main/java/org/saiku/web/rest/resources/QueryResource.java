@@ -312,7 +312,7 @@ public class QueryResource {
   public Response getQueryExcelExport(
       @PathParam("queryname") String queryName,
       @PathParam("saikuQueryName") String saikuQueryName,
-      @PathParam("show_sums") boolean show_sums,
+      @PathParam("show_sums") int show_sums,
       @PathParam("format") @DefaultValue("flattened") String format){
     if (log.isDebugEnabled()) {
       log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/xls/\tGET");
@@ -351,7 +351,7 @@ public class QueryResource {
 			log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/xls/"+format+"\tGET");
 		}
 		try {
-			byte[] doc = olapQueryService.getExport(queryName,"xls",format, false);
+			byte[] doc = olapQueryService.getExport(queryName,"xls",format, 0);
 			String name = SaikuProperties.webExportExcelName + "." + SaikuProperties.webExportExcelFormat;
 			return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
 					"content-disposition",
@@ -384,7 +384,7 @@ public class QueryResource {
 			log.debug("TRACK\t"  + "\t/query/" + queryName + "/export/csv/"+format+"\tGET");
 		}
 		try {
-			byte[] doc = olapQueryService.getExport(queryName,"csv",format, false);
+			byte[] doc = olapQueryService.getExport(queryName,"csv",format, 0);
 			String name = SaikuProperties.webExportCsvName;
 			return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
 					"content-disposition",
@@ -404,7 +404,7 @@ public class QueryResource {
 			@PathParam("queryname")  String queryName,
 			@PathParam("svg")  @DefaultValue("") String svg)
 	{
-		return exportPdfWithChartAndFormat(queryName, "", null, svg, true);
+		return exportPdfWithChartAndFormat(queryName, "", null, svg, 0);
 	}
 		
 	@GET
@@ -412,7 +412,7 @@ public class QueryResource {
 	@Path("/{queryname}/export/pdf")
 	public Response exportPdf(@PathParam("queryname")  String queryName)
 	{
-		return exportPdfWithChartAndFormat(queryName, "", null, null, true);
+		return exportPdfWithChartAndFormat(queryName, "", null, null, 0);
 	}
 
   @GET
@@ -422,7 +422,7 @@ public class QueryResource {
       @PathParam("queryname")  String queryName,
       @PathParam("saikuQueryName") String saikuQueryName,
       @PathParam("format") String format,
-      @PathParam("withSums") boolean withSums)
+      @PathParam("withSums") int withSums)
   {
     return exportPdfWithChartAndFormat(queryName, saikuQueryName, format, null, withSums);
   }
@@ -433,11 +433,24 @@ public class QueryResource {
 	public Response exportPdfWithFormat(
 			@PathParam("queryname")  String queryName,
 			@PathParam("format") String format,
-      @PathParam("withSums") boolean withSums)
+      @PathParam("withSums") int withSums)
 	{
 		return exportPdfWithChartAndFormat(queryName, "", format, null, withSums);
 	}
-	
+
+  /**
+   *
+   * @param queryName
+   * @param saikuQueryName
+   * @param format
+   * @param svg
+   * @param withSums :
+  //0 - вывод всех сумм со всеми итогами
+  //1 - вывод только промежуточных итогов
+  //2 - вывод только окончательных итогов
+  //3 - никаких итогов
+   * @return
+   */
 	@POST
 	@Produces({"application/pdf" })
 	@Path("/{queryname}/export/pdf/{saikuQueryName}/{format}/{withSums}/{svg}")
@@ -446,7 +459,7 @@ public class QueryResource {
       @PathParam("saikuQueryName") String saikuQueryName,
 			@PathParam("format") String format,
 			@FormParam("svg") @DefaultValue("") String svg,
-      @PathParam("withSums") boolean withSums)
+      @PathParam("withSums") int withSums)
 	{
 		
 		try {

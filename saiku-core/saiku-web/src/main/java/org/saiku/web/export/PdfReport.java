@@ -45,7 +45,7 @@ public class PdfReport {
 	
 	private static final Logger log = LoggerFactory.getLogger(PdfReport.class);
   private String saikuQueryName;
-	public byte[] pdf(String saikuQueryName, QueryResult qr, String svg, boolean withSums) throws Exception {
+	public byte[] pdf(String saikuQueryName, QueryResult qr, String svg, int withSums) throws Exception {
 		this.saikuQueryName = saikuQueryName;
 		int resultWidth = (qr != null && qr.getCellset() != null && qr.getCellset().size() > 0 ? qr.getCellset().get(0).length : 0);
 		if (resultWidth == 0) {
@@ -102,7 +102,7 @@ public class PdfReport {
 		return baos.toByteArray();
 	}
 
-	public void populatePdf(Document doc, PdfWriter writer, QueryResult qr, boolean withSums) throws Exception {
+	public void populatePdf(Document doc, PdfWriter writer, QueryResult qr, int withSums) throws Exception {
 			Long start = (new Date()).getTime();
 			String content = JSConverter.convertToHtml(qr, withSums);
 			

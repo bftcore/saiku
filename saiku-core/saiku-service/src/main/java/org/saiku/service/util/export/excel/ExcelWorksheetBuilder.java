@@ -52,7 +52,7 @@ public class ExcelWorksheetBuilder {
 
   private int maxRows = -1;
   private int maxColumns = -1;
-  private boolean show_sums = true;
+  private int show_sums = 0;
 
 
   private AbstractBaseCell[][] rowsetHeader;
@@ -81,11 +81,11 @@ public class ExcelWorksheetBuilder {
   private static final Logger log = LoggerFactory.getLogger( ExcelWorksheetBuilder.class );
 
   public ExcelWorksheetBuilder( String saikuQueryName, CellDataSet table, List<SaikuDimensionSelection> filters,
-                                ExcelBuilderOptions options, boolean show_sums ) {
+                                ExcelBuilderOptions options, int show_sums ) {
     init( saikuQueryName, table, filters, options, show_sums);
   }
 
-  protected void init( String saikuQueryName, CellDataSet table, List<SaikuDimensionSelection> filters, ExcelBuilderOptions options, boolean show_sums ) {
+  protected void init( String saikuQueryName, CellDataSet table, List<SaikuDimensionSelection> filters, ExcelBuilderOptions options, int show_sums ) {
     this.show_sums = show_sums;
     this.options = options;
     this.saikuQueryName = saikuQueryName;
@@ -361,7 +361,7 @@ public class ExcelWorksheetBuilder {
           cell.setCellValue( value );
         }
       }
-      if (this.show_sums && measuresCount > 0) {
+      if (this.show_sums <=1 && measuresCount > 0) {
         for (int y = rowsetBody[x + 1].length - measuresCount - 2; y >= 0; y--) {
           if (rowsetBody[x + 1][y] == null || !rowsetBody[x + 1][y].getFormattedValue().equals(rowsetBody[x][y].getFormattedValue())) {
             startingRow++;
@@ -402,7 +402,7 @@ public class ExcelWorksheetBuilder {
         }
       }
     }
-    if (this.show_sums && measuresCount > 0) {
+    if ((this.show_sums == 0 || this.show_sums == 2) && measuresCount > 0) {
       //Выводим итоги по самому первому измерению
       sheetRow = workbookSheet.createRow(startingRow + rowsetBody.length - 1);
       // creating style for data and string cells
