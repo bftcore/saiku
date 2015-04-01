@@ -16,6 +16,12 @@
         <jersey.version>1.11</jersey.version>
 		<spring.security.version>3.0.3.RELEASE</spring.security.version>
 	</properties>
+	<repositories>
+		<repository>
+			<id>iisln.repo</id>
+			<url>http://192.168.32.3:8081/artifactory/simple/ext-release-local/</url>
+		</repository>
+	</repositories>
 	<distributionManagement>
 		<repository>
 			<id>iisln.repo</id>
