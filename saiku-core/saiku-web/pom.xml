@@ -1,10 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<parent>
-		<artifactId>saiku-core</artifactId>
-		<groupId>org.saiku</groupId>
-		<version>2.6.1-SNAPSHOT</version>
-	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.saiku</groupId>
 	<artifactId>saiku-web</artifactId>
@@ -13,7 +8,12 @@
 	<packaging>jar</packaging>
 
 	<properties>
-		<spring.version>3.0.3.RELEASE</spring.version>
+		<maven.compiler.source>1.5</maven.compiler.source>
+		<maven.compiler.target>1.5</maven.compiler.target>
+    	<spring.version>3.0.3.RELEASE</spring.version>
+        <slf4j.version>1.6.4</slf4j.version>
+        <enunciate.version>1.28</enunciate.version>
+        <jersey.version>1.11</jersey.version>
 		<spring.security.version>3.0.3.RELEASE</spring.security.version>
 	</properties>
 	<distributionManagement>
