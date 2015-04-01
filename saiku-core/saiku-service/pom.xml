@@ -18,6 +18,10 @@
 			<id>iisln.repo</id>
 			<url>http://192.168.32.3:8081/artifactory/simple/ext-release-local/</url>
 		</repository>
+		<repository>
+			<id>iisln.repo.snapshot</id>
+			<url>http://192.168.32.3:8081/artifactory/simple/ext-snapshot-local/</url>
+		</repository>
 	</repositories>
 	<distributionManagement>
 		<repository>
