@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -49,7 +50,7 @@ public class ExcelWorksheetBuilder {
   private static final short BASIC_SHEET_FONT_SIZE = 11;
   private static final String EMPTY_STRING = "";
   private static final String CSS_COLORS_CODE_PROPERTIES = "css-colors-codes.properties";
-
+  private SimpleDateFormat sdfHHMMSS = new SimpleDateFormat("HH:mm:ss");
   private int maxRows = -1;
   private int maxColumns = -1;
 
@@ -339,9 +340,16 @@ public class ExcelWorksheetBuilder {
           value = workbookSheet.getRow( sheetRow.getRowNum() - 1 ).getCell( y ).getStringCellValue();
         }
         if ( rowsetBody[ x ][ y ] instanceof DataCell && ( (DataCell) rowsetBody[ x ][ y ] ).getRawNumber() != null ) {
-          Number numberValue = ( (DataCell) rowsetBody[ x ][ y ] ).getRawNumber();
-          cell.setCellValue( numberValue.doubleValue() );
-          applyCellFormatting( cell, x, y );
+          //Проверяем, не храним ли мы здесь данные типа даты. В общем случае надо делать проверки на все необходимые типы
+          try {
+            sdfHHMMSS.parse(value);
+            cell.setCellStyle(basicCS);
+            cell.setCellValue(value);
+          } catch (ParseException e) {
+            Number numberValue = ((DataCell) rowsetBody[x][y]).getRawNumber();
+            cell.setCellValue(numberValue.doubleValue());
+            applyCellFormatting(cell, x, y);
+          }
         } else {
           cell.setCellStyle( basicCS );
           cell.setCellValue( value );
