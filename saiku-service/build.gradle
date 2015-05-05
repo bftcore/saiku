@@ -1,0 +1,22 @@
+def saikuQueryVersion = '0.1'
+
+publishing {
+  publications {
+    maven(MavenPublication) {
+      groupId 'org.saiku'
+      from components.java
+    }
+  }
+}
+
+dependencies {
+	compile projectSaiku(':saiku-olap-util')
+  compile 'org.apache.poi:poi-ooxml:3.7'
+  compile group: 'org.saiku', name: 'saiku-query', version: saikuQueryVersion
+  compile 'org.olap4j:olap4j-xmla:1.2.0'
+  compile 'org.jdom:jdom:1.1'
+  compile 'com.cenqua.clover:clover:3.3.0'
+  compile 'junit:junit:4.10'
+  compile 'org.springframework:spring-beans:3.2.1.RELEASE'
+  compile 'hsqldb:hsqldb:1.8.0.10'
+}
