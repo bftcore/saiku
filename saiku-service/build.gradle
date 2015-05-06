@@ -5,6 +5,9 @@ publishing {
     maven(MavenPublication) {
       groupId 'org.saiku'
       from components.java
+      artifact (sourceJar) { // (2)
+        classifier = 'sources'
+      }
     }
   }
 }

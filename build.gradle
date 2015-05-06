@@ -72,8 +72,12 @@ allprojects {
     }
   }
 }
-
 subprojects {
+  task sourceJar (type : Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+
   publishing {
     repositories {
       maven {
