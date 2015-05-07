@@ -1,0 +1,5 @@
+rootProject.name ='saiku'
+
+include 'saiku-service'
+include 'saiku-web'
+include 'saiku-olap-util'

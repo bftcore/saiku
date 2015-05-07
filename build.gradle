@@ -1,0 +1,108 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+
+def isSnapshot = Boolean.parseBoolean("${saiku_version_snapshot}")
+
+allprojects {
+  apply plugin: 'java'
+  apply plugin: 'groovy'
+  apply plugin: 'idea'
+  apply plugin: 'maven-publish'
+  
+  sourceCompatibility = 1.8
+  version = addBuildNumber("${saiku_version_num}")
+
+  def uniqProjectName = project.path.substring(1).replace(':', '-')
+  uniqProjectName = uniqProjectName ? uniqProjectName : "main"
+
+  tasks.withType(JavaCompile) {
+    options.encoding = 'utf-8'
+  }
+
+  idea {
+    module {
+      inheritOutputDirs = false
+      outputDir = file('build/classes/main')
+      testOutputDir = file('build/classes/test')
+      downloadJavadoc = true
+      name = uniqProjectName
+    }
+  }
+
+  sourceSets {
+    main {
+      java {
+        srcDir 'src/main/java'
+      }
+      resources.srcDirs = ['src/main/java', 'src/main/resources']
+    }
+    test {
+      resources.srcDirs = ['src/test/java', 'src/test/resources']
+      output.resourcesDir 'build/classes/test'
+    }
+  }
+
+  jar {
+    //custom jar's basename for readability: *<project>-<subproject>...*.jar
+    baseName = uniqProjectName
+  }
+
+  repositories {
+    maven {
+      url "http://jin-server.bft.local:8097/nexus/content/repositories/central"
+
+      artifactUrls "http://jin-server.bft.local:8097/nexus/content/repositories/vaadin-snapshots"
+      artifactUrls "http://jin-server.bft.local:8097/nexus/content/repositories/vaadin-addons"
+      artifactUrls "http://jin-server.bft.local:8097/nexus/content/repositories/codehaus-snapshots"
+      artifactUrls "http://jin-server.bft.local:8097/nexus/content/repositories/JBoss"
+      artifactUrls "http://jin-server.bft.local:8097/nexus/content/repositories/BFT_REL"
+      artifactUrls "http://jin-server.bft.local:8097/nexus/content/repositories/repo.pentaho.org"
+      artifactUrls "http://jin-server.bft.local:8097/nexus/content/repositories/swartgwt"
+    }
+    maven { url "http://jin-server.bft.local:8097/nexus/content/repositories/com.bftcom" }
+    maven { url "http://jin-server.bft.local:8097/nexus/content/repositories/BFT_REL" }
+    maven { url "http://jin-server.bft.local:8097/nexus/content/repositories/missing-artifacts" }
+    maven { url "http://jin-server.bft.local:8097/nexus/content/repositories/jboss_public" }
+    maven { url "http://jin-server.bft.local:8097/nexus/content/repositories/pentaho" }
+
+    // репозитории pentaho
+    maven {
+      url "http://jin-server.bft.local:8097/nexus/content/repositories/repo.pentaho.org/"
+    }
+  }
+}
+subprojects {
+  task sourceJar (type : Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+
+  publishing {
+    repositories {
+      maven {
+        // change to point to your repo, e.g. http://my.org/repo
+        url "${artifactory_contextUrl}"
+        credentials {
+          username = "${artifactory_user}"
+          password = "${artifactory_password}"
+        }
+      }
+    }
+  }
+}
+
+def isEmbedded() {
+  return rootProject.ext.properties.containsKey('isSaikuEmbedded') ? rootProject.ext['isSaikuEmbedded'] : false
+}
+
+def projectSaiku(path) {
+  return project(isEmbedded() ? ":saiku${path}" : path)
+}
+
+
+def addBuildNumber(version) {
+  def env = System.getenv()
+  def buildNumber = env.BUILD_NUMBER?.toInteger()
+  return version + ((buildNumber != null) ? "." + buildNumber : "")
+}

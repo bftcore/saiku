@@ -1,1 +1,10 @@
 *.DS_Store
+*.ipr
+*.iws
+*.iml
+*.ids
+.gradle
+target
+/out/
+build
+classes
