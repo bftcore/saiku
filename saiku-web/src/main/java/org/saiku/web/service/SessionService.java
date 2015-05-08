@@ -67,7 +67,8 @@ public class SessionService implements ISessionService {
 	 * @see org.saiku.web.service.ISessionService#login(javax.servlet.http.HttpServletRequest, java.lang.String, java.lang.String)
 	 */
 	public Map<String, Object> login(HttpServletRequest req, String username, String password ) {
-		if (authenticationManager != null && (SecurityContextHolder.getContext() == null || SecurityContextHolder.getContext().getAuthentication() == null)) {
+		if ((authenticationManager != null && (SecurityContextHolder.getContext() == null || SecurityContextHolder.getContext().getAuthentication() == null))
+        || (SecurityContextHolder.getContext().getAuthentication().getPrincipal().equals("anonymousUser") && username!=null && password!=null)) {
 			authenticate(req, username, password);
 		}
 		if (SecurityContextHolder.getContext() != null && SecurityContextHolder.getContext().getAuthentication() != null) {
