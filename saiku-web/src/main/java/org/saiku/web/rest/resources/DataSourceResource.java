@@ -15,82 +15,96 @@
  */
 package org.saiku.web.rest.resources;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response.Status;
-
 import org.saiku.datasources.datasource.SaikuDatasource;
 import org.saiku.service.datasource.DatasourceService;
 import org.saiku.service.util.exception.SaikuServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Properties;
 
 @Component
 @Path("/saiku/{username}/datasources")
 public class DataSourceResource {
 
-    DatasourceService datasourceService;
-    
-    private static final Logger log = LoggerFactory.getLogger(DataSourceResource.class);
-    
-    public void setDatasourceService(DatasourceService ds) {
-    	datasourceService = ds;
-    }
-    
-    /**
-     * Get Data Sources.
-     * @return A Collection of SaikuDatasource's.
-     */
-    @GET
-    @Produces({"application/json" })
-     public Collection<SaikuDatasource> getDatasources() {
-    	try {
-			return datasourceService.getDatasources().values();
-		} catch (SaikuServiceException e) {
-			log.error(this.getClass().getName(),e);
-			return new ArrayList<SaikuDatasource>();
-		}
-    }
-    
-    /**
-     * Delete Data Source.
-     * @param datasourceName - The name of the data source.
-     * @return A GONE Status.
-     */
-    @DELETE
-	@Path("/{datasource}")
-	public Status deleteDatasource(@PathParam("datasource") String datasourceName){
-    	datasourceService.removeDatasource(datasourceName);
-		return(Status.GONE);
-    }
-    
-    /**
-     * Get Data Source.
-     * @param datasourceName.
-     * @return A Saiku Datasource.
-     */
-    @GET
-    @Produces({"application/json" })
-	@Path("/{datasource}")
-	public SaikuDatasource getDatasource(@PathParam("datasource") String datasourceName){
-    	return datasourceService.getDatasource(datasourceName);
-    }
+  DatasourceService datasourceService;
 
-//    @POST
-//    @Consumes({"application/json" })
-//	@Path("/{datasource}")
-//	public Status addDatasource(@PathParam("datasource") String datasourceName , @Context SaikuDatasource ds){
-//    	System.out.println("ds not null:" + (ds != null));
-//    	System.out.println("ds name:"+ds.getName());
-//    	datasourceService.addDatasource(ds);
-//    	return Status.OK;
-//    }
+  private static final Logger log = LoggerFactory.getLogger(DataSourceResource.class);
+
+  public void setDatasourceService(DatasourceService ds) {
+    datasourceService = ds;
+  }
+
+  /**
+   * Get Data Sources.
+   *
+   * @return A Collection of SaikuDatasource's.
+   */
+  @GET
+  @Produces({"application/json"})
+  public Collection<SaikuDatasource> getDatasources() {
+    try {
+      return datasourceService.getDatasources().values();
+    } catch (SaikuServiceException e) {
+      log.error(this.getClass().getName(), e);
+      return new ArrayList<SaikuDatasource>();
+    }
+  }
+
+  /**
+   * Delete Data Source.
+   *
+   * @param datasourceName - The name of the data source.
+   * @return A GONE Status.
+   */
+  @DELETE
+  @Produces({"application/json"})
+  @Path("/{datasource}")
+  public Response deleteDatasource(@PathParam("datasource") String datasourceName) {
+    datasourceService.removeDatasource(datasourceName);
+    return Response.ok().build();
+  }
+
+  /**
+   * Get Data Source.
+   *
+   * @param datasourceName.
+   * @return A Saiku Datasource.
+   */
+  @GET
+  @Produces({"application/json"})
+  @Path("/{datasource}")
+  public SaikuDatasource getDatasource(@PathParam("datasource") String datasourceName) {
+    return datasourceService.getDatasource(datasourceName);
+  }
+
+  @POST
+  @Path("/add")
+  public Response addDatasource(@FormParam("datasource") String name, @FormParam("properties") String properties) {
+    Properties datasourceProps = new Properties();
+    for (String prop : properties.split("\n")) {
+      datasourceProps.setProperty(prop.substring(0, prop.indexOf("=")), prop.substring(prop.indexOf("=") + 1));
+    }
+    SaikuDatasource ds = new SaikuDatasource(name, SaikuDatasource.Type.OLAP, datasourceProps);
+    System.out.println("ds not null:" + (ds != null));
+    System.out.println("ds name:" + ds.getName());
+    datasourceService.addDatasource(ds);
+    return Response.ok().build();
+  }
 
 }
