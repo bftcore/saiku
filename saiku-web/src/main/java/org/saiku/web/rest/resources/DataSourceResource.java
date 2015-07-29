@@ -20,6 +20,7 @@ import org.saiku.service.datasource.DatasourceService;
 import org.saiku.service.util.exception.SaikuServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -41,10 +42,16 @@ import java.util.Properties;
 @Component
 @Path("/saiku/{username}/datasources")
 public class DataSourceResource {
+  private String olapServerSchemaPath;
 
   DatasourceService datasourceService;
 
   private static final Logger log = LoggerFactory.getLogger(DataSourceResource.class);
+
+  @Value("${olapserver.schemas.path}")
+  private void setOlapServerSchemaPath(String value) {
+    this.olapServerSchemaPath = value;
+  }
 
   public void setDatasourceService(DatasourceService ds) {
     datasourceService = ds;
@@ -96,6 +103,7 @@ public class DataSourceResource {
   @POST
   @Path("/add")
   public Response addDatasource(@FormParam("datasource") String name, @FormParam("properties") String properties) {
+    properties = properties.replace("res:schemas", olapServerSchemaPath);
     Properties datasourceProps = new Properties();
     for (String prop : properties.split("\n")) {
       datasourceProps.setProperty(prop.substring(0, prop.indexOf("=")), prop.substring(prop.indexOf("=") + 1));
