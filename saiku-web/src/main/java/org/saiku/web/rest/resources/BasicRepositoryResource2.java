@@ -239,6 +239,8 @@ public class BasicRepositoryResource2 implements ISaikuRepository {
 					content += chunk + "\n";
 				}
 				byte[] doc = content.getBytes("UTF-8");
+				reader.close();
+				br.close();
 				return Response.ok(doc, MediaType.TEXT_PLAIN).header(
 								"content-length",doc.length).build();
 			}
@@ -279,8 +281,8 @@ public class BasicRepositoryResource2 implements ISaikuRepository {
 
 			if (repoFile == null) throw new Exception("Repo File not found");
 
-			if (repoFile.exists()) {
-				repoFile.delete();
+			if (!repoFile.exists()) {
+				repoFile.createFile();
 			}
 			if (!StringUtils.isNotBlank(content)) {
 				repoFile.createFolder();
@@ -291,6 +293,7 @@ public class BasicRepositoryResource2 implements ISaikuRepository {
 				bw.write(content);
 				bw.close();
 			}
+
 			return Response.ok().build();
 		} catch(Exception e){
 			log.error("Cannot save resource to ( file: " + file + ")",e);
