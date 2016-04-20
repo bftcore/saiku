@@ -284,10 +284,8 @@ public class BasicRepositoryResource2 implements ISaikuRepository {
 			if (!repoFile.exists()) {
 				repoFile.createFile();
 			}
-			if (!StringUtils.isNotBlank(content)) {
-				repoFile.createFolder();
-			} else {
-				repoFile.createFile();
+			if (StringUtils.isNotBlank(content)) {
+			    repoFile.createFile();
 				OutputStreamWriter ow = new OutputStreamWriter(repoFile.getContent().getOutputStream());
 				BufferedWriter bw = new BufferedWriter(ow);
 				bw.write(content);
