@@ -27,6 +27,8 @@ import org.saiku.olap.util.formatter.CellSetFormatter;
 import org.saiku.olap.util.formatter.ICellSetFormatter;
 import org.saiku.service.util.KeyValue;
 import org.saiku.service.util.exception.SaikuServiceException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -34,11 +36,13 @@ import java.util.List;
 
 public class CsvExporter {
 
+  private static final Logger log = LoggerFactory.getLogger(CsvExporter.class);
+
   public static byte[] exportCsv( CellSet cellSet ) {
     return exportCsv( cellSet, SaikuProperties.webExportCsvDelimiter, SaikuProperties.webExportCsvTextEscape );
   }
 
-  public static byte[] exportCsv( CellSet cellSet, String delimiter, String enclosing ) {
+  private static byte[] exportCsv(CellSet cellSet, String delimiter, String enclosing) {
     return exportCsv( cellSet, delimiter, enclosing, new CellSetFormatter() );
   }
 
@@ -112,15 +116,14 @@ public class CsvExporter {
             sb.append( delimiter );
           }
           content = content.replace( "\"", "\"\"" );
-          sb.append( enclosing + content + enclosing );
+          sb.append(enclosing).append(content).append(enclosing);
         }
         sb.append( "\r\n" );
         height++;
       }
       return sb.toString().getBytes( SaikuProperties.webExportCsvTextEncoding ); //$NON-NLS-1$
     } catch ( Exception e ) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      log.error("Exception", e);
     }
     return new byte[ 0 ];
   }
@@ -134,7 +137,7 @@ public class CsvExporter {
       boolean offset = rowHeader.length > 0;
       String[][] result = new String[ ( offset ? 1 : 0 ) + rowData.length ][];
       if ( offset ) {
-        List<String> cols = new ArrayList<String>();
+        List<String> cols = new ArrayList<>();
         for ( int x = 0; x < rowHeader[ 0 ].length; x++ ) {
           String col = null;
           for ( int y = rowHeader.length - 1; y >= 0; y-- ) {
@@ -159,7 +162,7 @@ public class CsvExporter {
         if ( lastKnownHeader == null ) {
           lastKnownHeader = new String[ rowData[ x ].length ];
         }
-        List<String> cols = new ArrayList<String>();
+        List<String> cols = new ArrayList<>();
         for ( int y = 0; y < rowData[ x ].length; y++ ) {
           String value = rowData[ x ][ y ].getFormattedValue();
           if ( !SaikuProperties.webExportCsvUseFormattedValue ) {
@@ -192,23 +195,21 @@ public class CsvExporter {
   private static byte[] export( String[][] resultSet, String delimiter ) {
     try {
       String output = "";
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       if ( resultSet.length > 0 ) {
-        for ( int i = 0; i < resultSet.length; i++ ) {
-          String[] vs = resultSet[ i ];
+        for (String[] vs : resultSet) {
+          for (int j = 0; j < vs.length; j++) {
+            String value = vs[j];
 
-          for ( int j = 0; j < vs.length; j++ ) {
-            String value = vs[ j ];
-
-            if ( j > 0 ) {
-              buf.append( delimiter + value );
+            if (j > 0) {
+              buf.append(delimiter).append(value);
               //output += delimiter + value;
             } else {
-              buf.append( value );
+              buf.append(value);
               //output += value;
             }
           }
-          buf.append( "\r\n" );
+          buf.append("\r\n");
           //output += "\r\n"; //$NON-NLS-1$
         }
         output = buf.toString();

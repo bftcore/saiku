@@ -14,44 +14,8 @@
  *   limitations under the License.
  */
 package org.saiku.web.rest.resources;
-
-import java.io.StringReader;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.*;
-
-import javax.servlet.ServletException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.codehaus.jackson.annotate.JsonAutoDetect.Visibility;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.type.TypeFactory;
-import org.saiku.olap.dto.SaikuCube;
-import org.saiku.olap.dto.SaikuDimensionSelection;
-import org.saiku.olap.dto.SaikuQuery;
-import org.saiku.olap.dto.SaikuTag;
-import org.saiku.olap.dto.SimpleCubeElement;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import org.saiku.olap.dto.*;
 import org.saiku.olap.dto.filter.SaikuFilter;
 import org.saiku.olap.dto.resultset.CellDataSet;
 import org.saiku.olap.query.IQuery;
@@ -64,17 +28,41 @@ import org.saiku.olap.util.formatter.ICellSetFormatter;
 import org.saiku.service.olap.OlapDiscoverService;
 import org.saiku.service.olap.OlapQueryService;
 import org.saiku.service.util.exception.SaikuServiceException;
-import org.saiku.web.export.PdfReport;
+import org.saiku.web.export.JSConverter;
 import org.saiku.web.rest.objects.MdxQueryObject;
 import org.saiku.web.rest.objects.SavedQuery;
 import org.saiku.web.rest.objects.SelectionRestObject;
 import org.saiku.web.rest.objects.resultset.QueryResult;
 import org.saiku.web.rest.util.RestUtil;
 import org.saiku.web.rest.util.ServletUtil;
+import org.saiku.web.svg.PdfReport;
+
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.io.InputStream;
+import java.io.StringReader;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.*;
+
+import javax.servlet.ServletException;
+import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 
 /**
  * QueryServlet contains all the methods required when manipulating an OLAP Query.
@@ -84,29 +72,29 @@ import org.springframework.stereotype.Component;
 @Component
 @Path("/saiku/{username}/query")
 @XmlAccessorType(XmlAccessType.NONE)
+@Deprecated
 public class QueryResource {
 
 	private static final Logger log = LoggerFactory.getLogger(QueryResource.class);
 
 	private OlapQueryService olapQueryService;
-	private OlapDiscoverService olapDiscoverService;
-	private ISaikuRepository repository;
+  private ISaikuRepository repository;
 	
-	@Autowired
+	//@Autowired
 	public void setOlapQueryService(OlapQueryService olapqs) {
 		olapQueryService = olapqs;
 	}
 
-	@Autowired
+	//@Autowired
 	public void setRepository(ISaikuRepository repository){
 		this.repository = repository;
 	}
 
 
 
-	@Autowired
+	//@Autowired
 	public void setOlapDiscoverService(OlapDiscoverService olapds) {
-		olapDiscoverService = olapds;
+	  OlapDiscoverService olapDiscoverService = olapds;
 	}
 
 	/*
@@ -148,7 +136,7 @@ public class QueryResource {
 		}
 		catch(Exception e){
 			log.error("Cannot delete query (" + queryName + ")",e);
-            throw new WebApplicationException(Response.serverError().entity(e).build());
+		    throw new WebApplicationException(Response.serverError().entity(e).build());
 		}
 	}
 
@@ -202,6 +190,11 @@ public class QueryResource {
 		}
 	}
 
+  /**
+   * Get the query properties.
+   * @param queryName
+   * @return
+   */
 	@GET
 	@Produces({"application/json" })
 	@Path("/{queryname}/properties")
@@ -213,6 +206,12 @@ public class QueryResource {
 	}
 
 
+  /**
+   * Set the query properties
+   * @param queryName
+   * @param properties
+   * @return
+   */
 	@POST
 	@Produces({"application/json" })
 	@Path("/{queryname}/properties")
@@ -412,15 +411,15 @@ public class QueryResource {
 	{
 		
 		try {
+			PdfReport pdf = new PdfReport();
 			CellDataSet cs = null;
 			if (StringUtils.isNotBlank(format)) {
 				cs = olapQueryService.execute(queryName, format);
 			} else {
 				cs = olapQueryService.execute(queryName);
 			}
-			QueryResult qr = RestUtil.convert(cs);
-			PdfReport pdf = new PdfReport();
-			byte[] doc  = pdf.pdf(qr, svg);
+			
+			byte[] doc  = pdf.pdf(cs, svg);
 			return Response.ok(doc).type("application/pdf").header(
 					"content-disposition",
 					"attachment; filename = export.pdf").header(
@@ -430,6 +429,48 @@ public class QueryResource {
 			return Response.serverError().entity(e.getMessage()).status(Status.INTERNAL_SERVER_ERROR).build();
 		}
 	}
+
+  @GET
+  @Produces({"text/html" })
+  @Path("/{queryname}/export/html/{format}")
+  public Response exportHtml(
+	  @PathParam("queryname") String queryName,
+	  @PathParam("format") String format,
+	  @QueryParam("css") @DefaultValue("false") Boolean css,
+	  @QueryParam("tableonly") @DefaultValue("false") Boolean tableonly,
+	  @QueryParam("wrapcontent") @DefaultValue("true") Boolean wrapcontent)
+  {
+	try {
+	  CellDataSet cs = null;
+	  if (StringUtils.isNotBlank(format)) {
+		cs = olapQueryService.execute(queryName, format);
+	  } else {
+		cs = olapQueryService.execute(queryName);
+	  }
+	  QueryResult qr = RestUtil.convert(cs);
+	  String content = JSConverter.convertToHtml(qr, wrapcontent);
+	  String html = "";
+	  if (!tableonly) {
+		html += "<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n";
+		if (css) {
+		  html += "<style>\n";
+		  InputStream is = JSConverter.class.getResourceAsStream("saiku.table.full.css");
+		  String cssContent = IOUtils.toString(is);
+		  html += cssContent;
+		  html += "</style>\n";
+		}
+		html += "</head>\n<body><div class='workspace_results'>\n";
+	  }
+	  html += content;
+	  if (!tableonly) {
+		html += "\n</div></body></html>";
+	  }
+	  return Response.ok(html).build();
+	} catch (Exception e) {
+	  log.error("Error exporting query to HTML", e);
+	  return Response.serverError().entity(e.getMessage()).status(Status.INTERNAL_SERVER_ERROR).build();
+	}
+  }
 
 	@DELETE
 	@Path("/{queryname}/result")
@@ -481,18 +522,21 @@ public class QueryResource {
 		}
 		try {
 			ICellSetFormatter icf;
-			formatter = formatter == null ? "" : formatter.toLowerCase(); 
-			if(formatter.equals("flat")) {
-				icf = new CellSetFormatter();
-			}
-			else if (formatter.equals("hierarchical")) {
-				icf = new HierarchicalCellSetFormatter();
-			}
-			else if (formatter.equals("flattened")) {
-				icf = new FlattenedCellSetFormatter();
-			} else {
-				icf = new FlattenedCellSetFormatter();
-			}
+			formatter = formatter == null ? "" : formatter.toLowerCase();
+		  switch (formatter) {
+		  case "flat":
+			icf = new CellSetFormatter();
+			break;
+		  case "hierarchical":
+			icf = new HierarchicalCellSetFormatter();
+			break;
+		  case "flattened":
+			icf = new FlattenedCellSetFormatter();
+			break;
+		  default:
+			icf = new FlattenedCellSetFormatter();
+			break;
+		  }
 
 			olapQueryService.qm2mdx(queryName);
 			
@@ -554,8 +598,7 @@ public class QueryResource {
 					+ "/hierarchies/" + hierarchyName + "/levels/" + levelName + "\tGET");
 		}
 		try {
-			List<SimpleCubeElement> ms = olapQueryService.getResultMetadataMembers(queryName, result, dimensionName, hierarchyName, levelName, searchString, searchLimit);
-			return ms;
+		  return olapQueryService.getResultMetadataMembers(queryName, result, dimensionName, hierarchyName, levelName, searchString, searchLimit);
 		}
 		catch (Exception e) {
 			log.error("Cannot execute query (" + queryName + ")",e);
@@ -610,38 +653,7 @@ public class QueryResource {
 		return rsc;
 
 	}
-    @POST
-    @Produces({"application/json" })
-    @Path("/{queryname}/drillacross")
-    public SaikuQuery drillacross(
-            @PathParam("queryname") String queryName,
-            @FormParam("position") String position,
-            @FormParam("drill") String returns)
-    {
-        if (log.isDebugEnabled()) {
-            log.debug("TRACK\t" + "\t/query/" + queryName + "/drillacross\tPOST");
-        }
 
-        try {
-            String[] positions = position.split(":");
-            List<Integer> cellPosition = new ArrayList<Integer>();
-            for (String p : positions) {
-                Integer pInt = Integer.parseInt(p);
-                cellPosition.add(pInt);
-            }
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, List<String>> levels = mapper.readValue(returns, TypeFactory.mapType(Map.class, TypeFactory.fromClass(String.class), TypeFactory.collectionType(ArrayList.class, String.class)));
-            SaikuQuery q = olapQueryService.drillacross(queryName, cellPosition, levels);
-            return q;
-
-        }
-        catch (Exception e) {
-            log.error("Cannot execute query (" + queryName + ")",e);
-            String error = ExceptionUtils.getRootCauseMessage(e);
-            throw new WebApplicationException(Response.serverError().entity(error).build());
-
-        }
-    }
 	@GET
 	@Produces({"application/json" })
 	@Path("/{queryname}/drillthrough")
@@ -662,7 +674,7 @@ public class QueryResource {
 				rs = olapQueryService.drillthrough(queryName, maxrows, returns);
 			} else {
 				String[] positions = position.split(":");
-				List<Integer> cellPosition = new ArrayList<Integer>();
+				List<Integer> cellPosition = new ArrayList<>();
 
 				for (String p : positions) {
 					Integer pInt = Integer.parseInt(p);
@@ -697,9 +709,9 @@ public class QueryResource {
 						if (statement != null) {
 							statement.close();
 						}
-					} catch (Exception ee) {};
+					} catch (Exception ee) {}
 
-					rs = null;
+				  rs = null;
 				}
 			}
 		}
@@ -707,6 +719,40 @@ public class QueryResource {
 
 	}
 
+  @POST
+  @Produces({"application/json" })
+  @Path("/{queryname}/drillacross")
+  public SaikuQuery drillacross(
+	  @PathParam("queryname") String queryName,
+	  @FormParam("position") String position,
+	  @FormParam("drill") String returns)
+  {
+	if (log.isDebugEnabled()) {
+	  log.debug("TRACK\t" + "\t/query/" + queryName + "/drillacross\tPOST");
+	}
+	try {
+	  String[] positions = position.split(":");
+	  List<Integer> cellPosition = new ArrayList<>();
+	  for (String p : positions) {
+		Integer pInt = Integer.parseInt(p);
+		cellPosition.add(pInt);
+	  }
+	  ObjectMapper mapper = new ObjectMapper();
+      JavaType ct =
+          mapper.getTypeFactory().constructCollectionType(ArrayList.class, String.class);
+
+      JavaType st = mapper.getTypeFactory().uncheckedSimpleType(String.class);
+	  Map<String, List<String>> levels = mapper.readValue(returns,
+          mapper.getTypeFactory().constructMapType(Map.class, st, ct));
+
+	  return olapQueryService.drillacross(queryName, cellPosition, levels);
+	}
+	catch (Exception e) {
+	  log.error("Cannot execute query (" + queryName + ")",e);
+	  String error = ExceptionUtils.getRootCauseMessage(e);
+	  throw new WebApplicationException(Response.serverError().entity(error).build());
+	}
+  }
 
 	@GET
 	@Produces({"text/csv" })
@@ -727,7 +773,7 @@ public class QueryResource {
 				rs = olapQueryService.drillthrough(queryName, maxrows, returns);
 			} else {
 				String[] positions = position.split(":");
-				List<Integer> cellPosition = new ArrayList<Integer>();
+				List<Integer> cellPosition = new ArrayList<>();
 
 				for (String p : positions) {
 					Integer pInt = Integer.parseInt(p);
@@ -874,14 +920,14 @@ public class QueryResource {
 			log.debug("TRACK\t"  + "\t/query/" + queryName + "/cell/" + position+ "/" + value + "\tGET");
 		}
 		String[] positions = position.split(":");
-		List<Integer> cellPosition = new ArrayList<Integer>();
+		List<Integer> cellPosition = new ArrayList<>();
 
 		for (String p : positions) {
 			Integer pInt = Integer.parseInt(p);
 			cellPosition.add(pInt);
 		}
 
-		olapQueryService.setCellValue(queryName, cellPosition, value, null);
+		olapQueryService.setCellValue(queryName, cellPosition, value);
 		return Status.OK;
 
 	}
@@ -983,14 +1029,15 @@ public class QueryResource {
 			if (log.isDebugEnabled()) {
 				log.debug("TRACK\t"  + "\t/query/" + queryName + "/zoomIn\tPUT");
 			}
-			List<List<Integer>> realPositions = new ArrayList<List<Integer>>();
+			List<List<Integer>> realPositions = new ArrayList<>();
 			if (StringUtils.isNotBlank(positionListString)) {
 				ObjectMapper mapper = new ObjectMapper();
-				String[] positions = mapper.readValue(positionListString, TypeFactory.arrayType(String.class));
+              String[] positions = mapper.readValue(positionListString, mapper.getTypeFactory().constructArrayType(String
+                    .class));
 				if (positions != null && positions.length > 0) {
 					for (String position : positions) {
 						String[] rPos = position.split(":");
-						List<Integer> cellPosition = new ArrayList<Integer>();
+						List<Integer> cellPosition = new ArrayList<>();
 	
 						for (String p : rPos) {
 							Integer pInt = Integer.parseInt(p);
@@ -1024,7 +1071,8 @@ public class QueryResource {
 
 			if (selectionJSON != null) {
 				ObjectMapper mapper = new ObjectMapper();
-				List<SelectionRestObject> selections = mapper.readValue(selectionJSON, TypeFactory.collectionType(ArrayList.class, SelectionRestObject.class));
+              List<SelectionRestObject> selections = mapper.readValue(selectionJSON,
+                  mapper.getTypeFactory().constructCollectionType(ArrayList.class, SelectionRestObject.class));
 
 				// remove stuff first, then add, removing removes all selections for that level first
 				for (SelectionRestObject selection : selections) {
@@ -1083,7 +1131,8 @@ public class QueryResource {
 				LinkedList<String> sels = (LinkedList<String>) formParams.get("selections");
 				String selectionJSON = (String) sels.getFirst();
 				ObjectMapper mapper = new ObjectMapper(); // can reuse, share globally
-				List<SelectionRestObject> selections = mapper.readValue(selectionJSON, TypeFactory.collectionType(ArrayList.class, SelectionRestObject.class));
+              List<SelectionRestObject> selections = mapper.readValue(selectionJSON,
+                  mapper.getTypeFactory().constructCollectionType(ArrayList.class, SelectionRestObject.class));
 				for (SelectionRestObject member : selections) {
 					removeMember("MEMBER", queryName, axisName, dimensionName, member.getUniquename());
 				}
@@ -1117,7 +1166,7 @@ public class QueryResource {
 			olapQueryService.moveDimension(queryName, axisName, dimensionName, position);
 
 			boolean ret = olapQueryService.includeMember(queryName, dimensionName, uniqueMemberName, selectionType, memberposition);
-			if(ret == true){
+			if(ret){
 				return Response.ok().status(Status.CREATED).build();
 			}
 			else{
@@ -1145,7 +1194,7 @@ public class QueryResource {
 			  log.debug("TRACK\t"  + "\t/query/" + queryName + "/axis/"+axisName+"/dimension/"+ dimensionName +"/member/"+ uniqueMemberName +"\tDELETE");
 		  }
 			boolean ret = olapQueryService.removeMember(queryName, dimensionName , uniqueMemberName , selectionType);
-			if(ret == true){
+			if(ret){
 				SaikuDimensionSelection dimsels = olapQueryService.getAxisDimensionSelections(queryName, axisName, dimensionName);
 				if (dimsels != null && dimsels.getSelections().size() == 0) {
 					olapQueryService.moveDimension(queryName, "UNUSED", dimensionName, -1);
@@ -1176,7 +1225,7 @@ public class QueryResource {
 			}
 
 			boolean ret = olapQueryService.includeChildren(queryName, dimensionName, uniqueMemberName);
-			if(ret == true){
+			if(ret){
 				return Response.ok().status(Status.CREATED).build();
 			}
 			else{
@@ -1202,7 +1251,7 @@ public class QueryResource {
 		}
 		try{
 			boolean ret = olapQueryService.removeChildren(queryName, dimensionName, uniqueMemberName);
-			if(ret == true){
+			if(ret){
 				return Response.ok().status(Status.GONE).build();
 			}
 			else{
@@ -1233,7 +1282,7 @@ public class QueryResource {
 		  }
 			olapQueryService.moveDimension(queryName, axisName, dimensionName, position);
 			boolean ret = olapQueryService.includeLevel(queryName, dimensionName, uniqueHierarchyName, uniqueLevelName);
-			if(ret == true){
+			if(ret){
 				return Response.ok().status(Status.CREATED).build();
 			}
 			else{
@@ -1260,7 +1309,7 @@ public class QueryResource {
 		  }
 			boolean ret = olapQueryService.removeLevel(queryName, dimensionName, uniqueHierarchyName, uniqueLevelName);
 			
-			if(ret == true){
+			if(ret){
 				SaikuDimensionSelection dimsels = olapQueryService.getAxisDimensionSelections(queryName, axisName, dimensionName);
 				if (dimsels != null && dimsels.getSelections().size() == 0) {
 					olapQueryService.moveDimension(queryName, "UNUSED", dimensionName, -1);
@@ -1495,4 +1544,3 @@ public class QueryResource {
 	}
 
 }
-

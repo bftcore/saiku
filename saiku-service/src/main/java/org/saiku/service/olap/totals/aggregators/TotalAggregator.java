@@ -10,21 +10,46 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class TotalAggregator {
-  private static final Map<String, TotalAggregator> all;
+  private static final Map<String, TotalAggregatorFactory> all;
+
+  private static interface TotalAggregatorFactory {
+    TotalAggregator create();
+  }
 
   static {
-    Map<String, TotalAggregator> tmp = new HashMap<String, TotalAggregator>();
-    tmp.put( "sum", new SumAggregator( null ) );
-    tmp.put( "max", new MaxAggregator( null ) );
-    tmp.put( "min", new MinAggregator( null ) );
-    tmp.put( "avg", new AvgAggregator( null ) );
+    Map<String, TotalAggregatorFactory> tmp = new HashMap<>();
+
+    tmp.put( "sum", new TotalAggregatorFactory() {
+      public TotalAggregator create() {
+        return new SumAggregator( null );
+      }      
+    });
+
+    tmp.put( "max", new TotalAggregatorFactory() {
+      public TotalAggregator create() {
+        return new MaxAggregator( null );
+      }      
+    });
+
+    tmp.put( "min", new TotalAggregatorFactory() {
+      public TotalAggregator create() {
+        return new MinAggregator( null );
+      }      
+    });
+
+    tmp.put( "avg", new TotalAggregatorFactory() {
+      public TotalAggregator create() {
+        return new AvgAggregator( null );
+      }      
+    });
+
     all = Collections.unmodifiableMap( tmp );
   }
 
   private String formattedValue;
-  protected Format format;
+  final Format format;
 
-  protected TotalAggregator( Format format ) {
+  TotalAggregator(Format format) {
     this.format = format;
   }
 
@@ -52,7 +77,7 @@ public abstract class TotalAggregator {
 
   protected abstract void addData( double data );
 
-  public abstract Double getValue();
+  protected abstract Double getValue();
 
   public abstract TotalAggregator newInstance( Format format, Measure measure );
 
@@ -76,11 +101,16 @@ public abstract class TotalAggregator {
     return newInstance( "" );
   }
 
-  public TotalAggregator newInstance( String formatString ) {
+  private TotalAggregator newInstance(String formatString) {
     return newInstance( new Format( formatString, SaikuProperties.locale ), null );
   }
 
   public static TotalAggregator newInstanceByFunctionName( final String functionName ) {
-    return all.get( functionName );
+    if(functionName.equals("not")){
+     return null;
+    }
+    else {
+      return all.get(functionName).create();
+    }
   }
 }

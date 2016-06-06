@@ -16,16 +16,17 @@
 
 package org.saiku.service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.servlet.http.HttpServletRequest;
+
 public class AnonymousSessionService implements ISessionService {
 
 
-  HashMap<String, Object> session = new HashMap<String, Object>();
+  private HashMap<String, Object> session = new HashMap<>();
 
   public AnonymousSessionService() {
     session.put( "username", "anonymous" );
@@ -58,6 +59,10 @@ public class AnonymousSessionService implements ISessionService {
 
   public Map<String, Object> getAllSessionObjects() {
     return session;
+  }
+
+  public void clearSessions(HttpServletRequest req, String username, String password) {
+    session = null;
   }
 
 }

@@ -15,21 +15,23 @@
  */
 package org.saiku.service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
 
 public interface ISessionService {
 
-  public Map<String, Object> login( HttpServletRequest req,
-                                    String username, String password );
+  Map<String, Object> login(HttpServletRequest req,
+                            String username, String password) throws Exception;
 
-  public void logout( HttpServletRequest req );
+  void logout(HttpServletRequest req);
 
-  public void authenticate( HttpServletRequest req, String username,
-                            String password );
+  void authenticate(HttpServletRequest req, String username,
+                    String password);
 
-  public Map<String, Object> getSession();
+  Map<String, Object> getSession() throws Exception;
 
-  public Map<String, Object> getAllSessionObjects();
+  Map<String, Object> getAllSessionObjects();
 
+  void clearSessions(HttpServletRequest req, String username, String password) throws Exception;
 }

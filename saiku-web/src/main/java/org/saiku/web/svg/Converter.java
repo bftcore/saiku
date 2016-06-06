@@ -5,12 +5,16 @@ package org.saiku.web.svg;
  * @since 1/15/13, 10:29 AM
  */
 
-import java.io.*;
-
 import org.apache.batik.transcoder.*;
-import org.apache.batik.transcoder.image.*;
-import org.apache.commons.io.*;
-import org.apache.fop.svg.*;
+import org.apache.batik.transcoder.image.JPEGTranscoder;
+import org.apache.batik.transcoder.image.PNGTranscoder;
+import org.apache.batik.transcoder.image.TIFFTranscoder;
+import org.apache.commons.io.IOUtils;
+import org.apache.fop.svg.PDFTranscoder;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public abstract class Converter
 {
@@ -20,7 +24,7 @@ public abstract class Converter
     private final String contentType;
     private final String extension;
 
-    protected Converter(String contentType, String extension)
+    Converter(String contentType, String extension)
     {
         this.contentType = contentType;
         this.extension = extension;
@@ -65,12 +69,12 @@ class SvgConverter extends Converter
 abstract class BatikConverter extends Converter
 {
 
-    protected BatikConverter(String extension)
+    BatikConverter(String extension)
     {
         super("image/" + extension, extension);
     }
 
-    protected BatikConverter(String contentType, String extension)
+    BatikConverter(String contentType, String extension)
     {
         super(contentType, extension);
     }

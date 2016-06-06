@@ -70,6 +70,14 @@ allprojects {
     maven {
       url "http://jin-server.bft.local:8097/nexus/content/repositories/repo.pentaho.org/"
     }
+
+    maven{
+      url "http://repo.meteorite.bi/content/repositories/alabs-release-local/"
+    }
+
+    maven{
+      url "http://repo.meteorite.bi/content/repositories/alabs-snapshot-local/"
+    }
   }
 }
 subprojects {

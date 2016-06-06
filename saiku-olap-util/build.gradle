@@ -1,5 +1,5 @@
 def slf4jVersion = '1.7.9'
-def mondrianVersion = '3.6.5'
+def mondrianVersion = '4.3.1.0-169'
 def olap4jVersion = '1.2.0'
 
 publishing {
@@ -7,7 +7,7 @@ publishing {
     maven(MavenPublication) {
       groupId 'org.saiku'
       from components.java
-      artifact (sourceJar) { // (2)
+      artifact(sourceJar) { // (2)
         classifier = 'sources'
       }
     }
@@ -15,6 +15,10 @@ publishing {
 }
 
 dependencies {
+  compile group: 'log4j', name: 'log4j', version: '1.2.16'
+
+  compile group: 'org.apache.commons', name: 'commons-math', version: '2.2'
+
   compile(group: 'org.olap4j', name: 'olap4j', version: olap4jVersion) {
     exclude group: 'asm', module: 'asm'
     exclude group: 'asm', module: 'asm-commons'
@@ -23,6 +27,7 @@ dependencies {
   }
   compile(group: 'pentaho', name: 'mondrian', version: mondrianVersion) {
     exclude group: 'javax.servlet', module: 'jsp-api'
+    exclude group: 'log4j', module: 'log4j'
   }
   compile group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
   compile 'eigenbase:eigenbase-properties:1.1.0.10924'

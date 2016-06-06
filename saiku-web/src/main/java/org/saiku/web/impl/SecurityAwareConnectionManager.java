@@ -33,6 +33,7 @@ import org.saiku.datasources.connection.AbstractConnectionManager;
 import org.saiku.datasources.connection.ISaikuConnection;
 import org.saiku.datasources.connection.SaikuConnectionFactory;
 import org.saiku.datasources.datasource.SaikuDatasource;
+import org.saiku.olap.util.exception.SaikuOlapException;
 import org.saiku.service.ISessionService;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -56,7 +57,11 @@ public class SecurityAwareConnectionManager extends AbstractConnectionManager im
 
 	@Override
 	public void init() {
-		this.connections = getAllConnections();
+		try {
+			this.connections = getAllConnections();
+		} catch (SaikuOlapException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@Override
@@ -237,7 +242,7 @@ public class SecurityAwareConnectionManager extends AbstractConnectionManager im
 	private List<String> getSpringRoles() {
 		List<String> roles = new ArrayList<String>();
 		if (SecurityContextHolder.getContext() != null && SecurityContextHolder.getContext().getAuthentication() != null) {
-			Collection<GrantedAuthority> auths = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+			Collection<GrantedAuthority> auths = (Collection<GrantedAuthority>) SecurityContextHolder.getContext().getAuthentication().getAuthorities();
 			for (GrantedAuthority a : auths) {
 				roles.addAll(Arrays.asList(a.getAuthority().substring(1, a.getAuthority().length() - 1).split(", ")));
 			}

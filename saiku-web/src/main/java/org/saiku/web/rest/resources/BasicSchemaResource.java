@@ -69,7 +69,7 @@ public class BasicSchemaResource {
       if (file == null || file.startsWith("/") || file.startsWith(".")) {
         throw new IllegalArgumentException("Path cannot be null or start with \"/\" or \".\" - Illegal Path: " + file);
       }
-      if(!file.endsWith(".xml")){
+      if (!file.endsWith(".xml")) {
         file = file + ".xml";
       }
       FileObject repoFile = repo.resolveFile(file);
@@ -79,16 +79,13 @@ public class BasicSchemaResource {
 
       if (repoFile.exists()) {
         repoFile.delete();
-      }
-      if (!StringUtils.isNotBlank(content)) {
-        repoFile.createFolder();
       } else {
         repoFile.createFile();
-        OutputStreamWriter ow = new OutputStreamWriter(repoFile.getContent().getOutputStream());
-        BufferedWriter bw = new BufferedWriter(ow);
-        bw.write(content);
-        bw.close();
       }
+      OutputStreamWriter ow = new OutputStreamWriter(repoFile.getContent().getOutputStream());
+      BufferedWriter bw = new BufferedWriter(ow);
+      bw.write(content);
+      bw.close();
       return Response.ok().build();
     } catch (Exception e) {
       log.error("Cannot save schema to ( file: " + file + ")", e);

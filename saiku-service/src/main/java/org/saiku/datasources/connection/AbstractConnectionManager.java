@@ -15,21 +15,30 @@
  */
 package org.saiku.datasources.connection;
 
-import org.olap4j.OlapConnection;
 import org.saiku.datasources.datasource.SaikuDatasource;
+import org.saiku.olap.util.exception.SaikuOlapException;
 import org.saiku.service.datasource.IDatasourceManager;
 import org.saiku.service.datasource.IDatasourceProcessor;
 import org.saiku.service.util.exception.SaikuServiceException;
 
+import org.olap4j.OlapConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-public abstract class AbstractConnectionManager implements IConnectionManager {
+public abstract class AbstractConnectionManager implements IConnectionManager, Serializable {
 
-
-  private IDatasourceManager ds;
+  private static final long serialVersionUID = 4735617922513789022L;
+  private static final Logger log = LoggerFactory.getLogger(AbstractConnectionManager.class);
+  private transient IDatasourceManager ds;
 
   public void setDataSourceManager( IDatasourceManager ds ) {
     this.ds = ds;
@@ -39,9 +48,19 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
     return ds;
   }
 
-  public abstract void init();
+  private transient List<IDatasourceProcessor> dsProcessors;
 
-  public void destroy() {
+  public void setDataSourceProcessors(List<IDatasourceProcessor> processors){
+    this.dsProcessors = processors;
+  }
+
+  public List<IDatasourceProcessor> getDataSourceProcessors(){
+    return this.dsProcessors;
+  }
+
+  public abstract void init() throws SaikuOlapException;
+
+  public void destroy() throws SaikuOlapException {
     Map<String, OlapConnection> connections = getAllOlapConnections();
     if ( connections != null && !connections.isEmpty() ) {
       for ( OlapConnection con : connections.values() ) {
@@ -50,16 +69,18 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
             con.close();
           }
         } catch ( Exception e ) {
-          e.printStackTrace();
+          log.error("Could not close connection", e);
         }
       }
     }
-    connections.clear();
-    System.out.println( "Do we still have connections? : " + getAllOlapConnections().size() );
+      if (connections != null) {
+          connections.clear();
+      }
+    log.info("Do we still have connections? : " + getAllOlapConnections().size());
   }
 
   private SaikuDatasource preProcess( SaikuDatasource datasource ) {
-    if ( datasource.getProperties().containsKey( ISaikuConnection.DATASOURCE_PROCESSORS ) ) {
+    if ( datasource != null && datasource.getProperties().containsKey( ISaikuConnection.DATASOURCE_PROCESSORS ) ) {
       datasource = datasource.clone();
       String[] processors =
         datasource.getProperties().getProperty( ISaikuConnection.DATASOURCE_PROCESSORS ).split( "," );
@@ -82,7 +103,7 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
   }
 
   private ISaikuConnection postProcess( SaikuDatasource datasource, ISaikuConnection con ) {
-    if ( datasource.getProperties().containsKey( ISaikuConnection.CONNECTION_PROCESSORS ) ) {
+    if ( datasource!=null && datasource.getProperties().containsKey( ISaikuConnection.CONNECTION_PROCESSORS ) ) {
       datasource = datasource.clone();
       String[] processors =
         datasource.getProperties().getProperty( ISaikuConnection.CONNECTION_PROCESSORS ).split( "," );
@@ -104,15 +125,16 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
     return con;
   }
 
-  public ISaikuConnection getConnection( String name ) {
-    SaikuDatasource datasource = ds.getDatasource( name );
+  public ISaikuConnection getConnection( String name ) throws SaikuOlapException {
+    SaikuDatasource datasource = ds.getDatasource( name, false );
     datasource = preProcess( datasource );
     ISaikuConnection con = getInternalConnection( name, datasource );
     con = postProcess( datasource, con );
     return con;
   }
 
-  protected abstract ISaikuConnection getInternalConnection( String name, SaikuDatasource datasource );
+  protected abstract ISaikuConnection getInternalConnection( String name, SaikuDatasource datasource )
+    throws SaikuOlapException;
 
   protected abstract ISaikuConnection refreshInternalConnection( String name, SaikuDatasource datasource );
 
@@ -130,8 +152,8 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
     con = postProcess( datasource, con );
   }
 
-  public Map<String, ISaikuConnection> getAllConnections() {
-    Map<String, ISaikuConnection> resultDs = new HashMap<String, ISaikuConnection>();
+  public Map<String, ISaikuConnection> getAllConnections() throws SaikuOlapException {
+    Map<String, ISaikuConnection> resultDs = new HashMap<>();
     for ( String name : ds.getDatasources().keySet() ) {
       ISaikuConnection con = getConnection( name );
       if ( con != null ) {
@@ -141,7 +163,7 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
     return resultDs;
   }
 
-  public OlapConnection getOlapConnection( String name ) {
+  public OlapConnection getOlapConnection( String name ) throws SaikuOlapException {
     ISaikuConnection con = getConnection( name );
     if ( con != null ) {
       Object o = con.getConnection();
@@ -149,12 +171,15 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
         return (OlapConnection) o;
       }
     }
+    else{
+
+    }
     return null;
   }
 
-  public Map<String, OlapConnection> getAllOlapConnections() {
+  public Map<String, OlapConnection> getAllOlapConnections() throws SaikuOlapException {
     Map<String, ISaikuConnection> connections = getAllConnections();
-    Map<String, OlapConnection> ocons = new HashMap<String, OlapConnection>();
+    Map<String, OlapConnection> ocons = new HashMap<>();
     for ( ISaikuConnection con : connections.values() ) {
       Object o = con.getConnection();
       if ( o != null && o instanceof OlapConnection ) {
@@ -165,7 +190,7 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
     return ocons;
   }
 
-  public boolean isDatasourceSecurity( SaikuDatasource datasource, String value ) {
+  protected boolean isDatasourceSecurity(SaikuDatasource datasource, String value) {
     if ( datasource != null && value != null ) {
       Properties props = datasource.getProperties();
       if ( props != null && isDatasourceSecurityEnabled( datasource ) ) {
@@ -177,15 +202,21 @@ public abstract class AbstractConnectionManager implements IConnectionManager {
     return false;
   }
 
-  public boolean isDatasourceSecurityEnabled( SaikuDatasource datasource ) {
+  protected boolean isDatasourceSecurityEnabled(SaikuDatasource datasource) {
     if ( datasource != null ) {
       Properties props = datasource.getProperties();
       if ( props != null && props.containsKey( ISaikuConnection.SECURITY_ENABLED_KEY ) ) {
         String enabled = props.getProperty( ISaikuConnection.SECURITY_ENABLED_KEY, "false" );
-        boolean isSecurity = Boolean.parseBoolean( enabled );
-        return isSecurity;
+          return Boolean.parseBoolean( enabled );
       }
     }
     return false;
+  }
+
+  private void readObject(ObjectInputStream stream)
+      throws IOException, ClassNotFoundException {
+
+    stream.defaultReadObject();
+   // ds = (IDatasourceManager)ApplicationContextProvider.getApplicationContext().getBean("classpathDsManager");
   }
 }

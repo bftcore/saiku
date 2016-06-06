@@ -1,6 +1,6 @@
 package org.saiku.service;
 
-import org.saiku.service.util.Plugin;
+import org.saiku.service.util.dto.Plugin;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
@@ -24,8 +24,8 @@ public class PlatformUtilsService {
   }
 
 
-  public ArrayList getAvailablePlugins(){
-    ArrayList l = new ArrayList<Plugin>(  );
+  public ArrayList<Plugin> getAvailablePlugins(){
+    ArrayList l = new ArrayList<>();
     File f = new File(filePath);
 
     String[] directories = f.list(new FilenameFilter() {

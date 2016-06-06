@@ -59,7 +59,7 @@ public class SaikuProperties extends Properties {
     return instance;
   }
 
-  public SaikuProperties() {
+  private SaikuProperties() {
     this.propertySource =
       new FilePropertySource( new File( SAIKU_PROPERTIES ) );
   }
@@ -148,7 +148,7 @@ public class SaikuProperties extends Properties {
   /**
    * Loads saiku.properties from: 1) the file "$PWD/" 2) CLASSPATH 3) the system properties
    */
-  public void populate() {
+  private void populate() {
     loadIfStale( propertySource );
 
     URL url = null;
@@ -245,6 +245,7 @@ public class SaikuProperties extends Properties {
   public static final String webExportExcelFormat = getPropString( "saiku.web.export.excel.format", "xlsx" );
   public static final String webExportExcelDefaultNumberFormat =
     getPropString( "saiku.web.export.excel.numberformat", "#,##0.00" );
+  public static final String webExportExcelPoweredBy = getPropString("saiku.web.export.excel.poweredby", "Export made using Saiku OLAP client.");
   public static final String formatDefautNumberFormat = getPropString( "saiku.format.numberformat", "#,##0.00" );
   public static final Locale locale = getLocale();
   public static final Boolean olapConvertQuery = getPropBoolean( "saiku.olap.convert.query", "false" );
