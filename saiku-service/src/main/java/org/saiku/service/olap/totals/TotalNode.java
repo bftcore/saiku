@@ -2,6 +2,8 @@ package org.saiku.service.olap.totals;
 
 import org.olap4j.Cell;
 import org.olap4j.metadata.Measure;
+import org.saiku.olap.query2.ThinMeasure;
+import org.saiku.olap.query2.util.Fat;
 import org.saiku.service.olap.totals.aggregators.TotalAggregator;
 
 
@@ -25,7 +27,17 @@ public class TotalNode {
       if ( aggregatorTemplate != null ) {
         for ( int i = 0; i < totals.length; i++ ) {
           for ( int j = 0; j < totals[ 0 ].length; j++ ) {
-            totals[ i ][ j ] = aggregatorTemplate.newInstance( formatList.getValueFormat( j, i ), measures[ i ] );
+            int k = j % measures.length;
+            if (measures[k] instanceof Fat.MeasureAdapter) {
+              ThinMeasure tm = ((Fat.MeasureAdapter)measures[k]).getThinMeasure();
+              if (tm != null && tm.getAggregators() != null && !tm.getAggregators().isEmpty()) {
+                String agg = tm.getAggregators().get(0);
+                totals[i][j] = TotalAggregator.newInstanceByFunctionName(agg).newInstance(formatList.getValueFormat(j, i), measures[k]);
+                continue;
+              }
+            }
+
+            totals[i][j] = aggregatorTemplate.newInstance(formatList.getValueFormat(j, i), measures[i]);
           }
         }
       }

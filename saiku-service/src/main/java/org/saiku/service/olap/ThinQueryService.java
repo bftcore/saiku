@@ -24,13 +24,7 @@ import org.saiku.olap.query.IQuery;
 import org.saiku.olap.query.IQuery.QueryType;
 import org.saiku.olap.query.OlapQuery;
 import org.saiku.olap.query.QueryDeserializer;
-import org.saiku.olap.query2.ThinAxis;
-import org.saiku.olap.query2.ThinCalculatedMember;
-import org.saiku.olap.query2.ThinHierarchy;
-import org.saiku.olap.query2.ThinLevel;
-import org.saiku.olap.query2.ThinMember;
-import org.saiku.olap.query2.ThinQuery;
-import org.saiku.olap.query2.ThinQueryModel;
+import org.saiku.olap.query2.*;
 import org.saiku.olap.query2.ThinQueryModel.AxisLocation;
 import org.saiku.olap.query2.util.Fat;
 import org.saiku.olap.query2.util.Thin;
@@ -313,6 +307,17 @@ public class ThinQueryService implements Serializable {
             ThinQuery tqAfter = Thin.convert(q, old.getCube());
             tqAfter.getQueryModel().setCalculatedMembers(cms);
             getEnabledCMembers(old.getQueryModel(), tqAfter.getQueryModel());
+
+            // Set measures aggregators
+            for (ThinMeasure measure : tqAfter.getQueryModel().getDetails().getMeasures()) {
+                for (ThinMeasure oldMeasure : old.getQueryModel().getDetails().getMeasures()) {
+                    if (measure.getUniqueName().equals(oldMeasure.getUniqueName())) {
+                        measure.getAggregators().addAll(oldMeasure.getAggregators());
+                        break;
+                    }
+                }
+            }
+
             old.setQueryModel(tqAfter.getQueryModel());
             old.setMdx(tqAfter.getMdx());
         }
@@ -610,7 +615,7 @@ public class ThinQueryService implements Serializable {
                             Set<Member> mset = new HashSet<>();
                             for (Position pos : axis.getPositions()) {
                                 Member m = pos.getMembers().get(posIndex);
-                                if (!m.getLevel().getLevelType().equals(org.olap4j.metadata.Level.Type.ALL)) {
+                                if (!m.getLevel().getLevelType().equals(Level.Type.ALL)) {
                                     levels.add(m.getLevel());
                                 }
                                 if (m.getLevel().getUniqueName().equals(levelName) || m.getLevel().getName().equals(levelName)) {
@@ -668,7 +673,7 @@ public class ThinQueryService implements Serializable {
                 List<String> aggs = query.getAggregators(axisInfos[second].axis.getAxisOrdinal().name());
                 String totalFunctionName = aggs != null && aggs.size() > 0 ? aggs.get(0) : null;
                 aggregators[0] = StringUtils.isNotBlank(totalFunctionName) ? TotalAggregator.newInstanceByFunctionName(totalFunctionName) : null;
-                builder = new TotalsListsBuilder(selectedMeasures, aggregators, cellSet, axisInfos[index], axisInfos[second]);
+                builder = new TotalsListsBuilder(selectedMeasures, aggregators, cellSet, axisInfos[index], axisInfos[second], tq);
                 totals[index] = builder.buildTotalsLists();
             }
             result.setLeftOffset(axisInfos[0].maxDepth);

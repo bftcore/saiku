@@ -1,7 +1,21 @@
 package org.saiku.olap.query2.util;
 
+import mondrian.olap4j.SaikuMondrianHelper;
 import org.apache.commons.lang.StringUtils;
-
+import org.olap4j.Axis;
+import org.olap4j.OlapException;
+import org.olap4j.impl.IdentifierParser;
+import org.olap4j.mdx.IdentifierSegment;
+import org.olap4j.mdx.ParseTreeNode;
+import org.olap4j.metadata.Cube;
+import org.olap4j.metadata.Datatype;
+import org.olap4j.metadata.Dimension;
+import org.olap4j.metadata.Hierarchy;
+import org.olap4j.metadata.Level;
+import org.olap4j.metadata.Measure;
+import org.olap4j.metadata.Member;
+import org.olap4j.metadata.NamedList;
+import org.olap4j.metadata.Property;
 import org.saiku.olap.query2.ThinAxis;
 import org.saiku.olap.query2.ThinCalculatedMeasure;
 import org.saiku.olap.query2.ThinCalculatedMember;
@@ -33,27 +47,11 @@ import org.saiku.query.mdx.NameLikeFilter;
 import org.saiku.query.metadata.CalculatedMeasure;
 import org.saiku.query.metadata.CalculatedMember;
 
-import org.olap4j.Axis;
-import org.olap4j.OlapException;
-import org.olap4j.impl.IdentifierParser;
-import org.olap4j.mdx.IdentifierNode;
-import org.olap4j.mdx.IdentifierSegment;
-import org.olap4j.metadata.Cube;
-import org.olap4j.metadata.Hierarchy;
-import org.olap4j.metadata.Level;
-import org.olap4j.metadata.Measure;
-import org.olap4j.metadata.Member;
-import org.olap4j.metadata.NamedList;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import mondrian.olap4j.MondrianOlap4jLevel;
-import mondrian.olap4j.SaikuMondrianHelper;
-import mondrian.rolap.RolapCubeLevel;
 
 public class Fat {
 	
@@ -190,14 +188,21 @@ public class Fat {
 		query.getDetails().setLocation(loc);
 		Axis ax = getLocation(details.getAxis());
 		query.getDetails().setAxis(ax);
-		
+
+		System.out.println("**** Fat.convertDetails"); // ***
+
 		if (details.getMeasures().size() > 0) {
 			for (ThinMeasure m : details.getMeasures()) {
+				System.out.println("\t" + m.getName() + " - TYPE: " + m.getType()); // ***
+				if (m.getAggregators() != null && !m.getAggregators().isEmpty()) { // ***
+					System.out.println("\t\t" + m.getAggregators().get(0));
+				}
+
 				if (Type.CALCULATED.equals(m.getType())) {
 					Measure measure = query.getCalculatedMeasure(m.getName());
 					query.getDetails().add(measure);
 				} else if (Type.EXACT.equals(m.getType())) {
-					Measure measure = query.getMeasure(m.getName());
+					Measure measure = new MeasureAdapter(query.getMeasure(m.getName()), m);
 					query.getDetails().add(measure);
 				}
 			}
@@ -508,7 +513,7 @@ public class Fat {
 	private static void extendSortableQuerySet(Query q, ISortableQuerySet qs, ThinSortableQuerySet ts) {
 		extendQuerySet(q, qs, ts);
 		if (ts.getHierarchizeMode() != null) {
-			qs.setHierarchizeMode(org.saiku.query.ISortableQuerySet.HierarchizeMode.valueOf(ts.getHierarchizeMode().toString()));
+			qs.setHierarchizeMode(ISortableQuerySet.HierarchizeMode.valueOf(ts.getHierarchizeMode().toString()));
 		}
 		if (ts.getSortOrder() != null) {
 			qs.sort(org.saiku.query.SortOrder.valueOf(ts.getSortOrder().toString()), ts.getSortEvaluationLiteral());
@@ -517,5 +522,171 @@ public class Fat {
 		
 	}
 	
+	public static class MeasureAdapter implements Measure {
+		private Measure measure;
+		private ThinMeasure thinMeasure;
 
+		public MeasureAdapter(Measure measure, ThinMeasure thinMeasure) {
+			this.measure = measure;
+			this.thinMeasure = thinMeasure;
+		}
+
+		public ThinMeasure getThinMeasure() {
+			return thinMeasure;
+		}
+
+		@Override
+		public Aggregator getAggregator() {
+			if (thinMeasure != null && thinMeasure.getAggregators() != null && !thinMeasure.getAggregators().isEmpty()) {
+				String aggregator = thinMeasure.getAggregators().get(0);
+				for (Aggregator agg : Aggregator.values()) {
+					if (aggregator.equalsIgnoreCase(agg.name())) {
+						return agg;
+					}
+				}
+			}
+
+			return measure.getAggregator();
+		}
+
+		@Override
+		public Datatype getDatatype() {
+			return measure.getDatatype();
+		}
+
+		@Override
+		public boolean isVisible() {
+			return measure.isVisible();
+		}
+
+		@Override
+		public NamedList<? extends Member> getChildMembers() throws OlapException {
+			return measure.getChildMembers();
+		}
+
+		@Override
+		public int getChildMemberCount() throws OlapException {
+			return measure.getChildMemberCount();
+		}
+
+		@Override
+		public Member getParentMember() {
+			return measure.getParentMember();
+		}
+
+		@Override
+		public Level getLevel() {
+			return measure.getLevel();
+		}
+
+		@Override
+		public Hierarchy getHierarchy() {
+			return measure.getHierarchy();
+		}
+
+		@Override
+		public Dimension getDimension() {
+			return measure.getDimension();
+		}
+
+		@Override
+		public Type getMemberType() {
+			return measure.getMemberType();
+		}
+
+		@Override
+		public boolean isAll() {
+			return measure.isAll();
+		}
+
+		@Override
+		public boolean isChildOrEqualTo(Member member) {
+			return measure.isChildOrEqualTo(member);
+		}
+
+		@Override
+		public boolean isCalculated() {
+			return measure.isCalculated();
+		}
+
+		@Override
+		public int getSolveOrder() {
+			return measure.getSolveOrder();
+		}
+
+		@Override
+		public ParseTreeNode getExpression() {
+			return measure.getExpression();
+		}
+
+		@Override
+		public List<Member> getAncestorMembers() {
+			return measure.getAncestorMembers();
+		}
+
+		@Override
+		public boolean isCalculatedInQuery() {
+			return measure.isCalculatedInQuery();
+		}
+
+		@Override
+		public Object getPropertyValue(Property property) throws OlapException {
+			return measure.getPropertyValue(property);
+		}
+
+		@Override
+		public String getPropertyFormattedValue(Property property) throws OlapException {
+			return measure.getPropertyFormattedValue(property);
+		}
+
+		@Override
+		public void setProperty(Property property, Object o) throws OlapException {
+			measure.setProperty(property, o);
+		}
+
+		@Override
+		public NamedList<Property> getProperties() {
+			return measure.getProperties();
+		}
+
+		@Override
+		public int getOrdinal() {
+			return measure.getOrdinal();
+		}
+
+		@Override
+		public boolean isHidden() {
+			return measure.isHidden();
+		}
+
+		@Override
+		public int getDepth() {
+			return measure.getDepth();
+		}
+
+		@Override
+		public Member getDataMember() {
+			return measure.getDataMember();
+		}
+
+		@Override
+		public String getName() {
+			return measure.getName();
+		}
+
+		@Override
+		public String getUniqueName() {
+			return measure.getUniqueName();
+		}
+
+		@Override
+		public String getCaption() {
+			return measure.getCaption();
+		}
+
+		@Override
+		public String getDescription() {
+			return measure.getDescription();
+		}
+	}
 }

@@ -91,10 +91,7 @@ public class ThinQuery implements ISaikuQuery {
 	public String getMdx() {
 		return mdx;
 	}
-
-	public void setParameterResolvedMdx(String val){
-	}
-
+	
 	@JsonIgnore
 	public String getParameterResolvedMdx() {
 		String replacedMdx = mdx;
@@ -240,5 +237,10 @@ public class ThinQuery implements ISaikuQuery {
 	 */
 	public void setQueryType(String queryType) {
 		this.queryType = queryType;
+	}
+
+	@JsonIgnore
+	public ThinLevel getLevel(String name) {
+		return this.getQueryModel().getLevel(name);
 	}
 }
