@@ -7,7 +7,7 @@ import org.olap4j.metadata.Measure;
  * Created by brunogamacatao on 22/06/16.
  */
 public class BlankAggregator extends TotalAggregator {
-
+  private static final String BLANK_VALUE = "-";
   BlankAggregator(Format format) {
     super( format );
   }
@@ -28,6 +28,11 @@ public class BlankAggregator extends TotalAggregator {
 
   public TotalAggregator newInstance( Format format, Measure measure ) {
     return new BlankAggregator( format );
+  }
+
+  @Override
+  public String getFormattedValue() {
+    return BLANK_VALUE;
   }
 
 }
