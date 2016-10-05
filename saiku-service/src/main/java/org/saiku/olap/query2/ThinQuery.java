@@ -91,7 +91,10 @@ public class ThinQuery implements ISaikuQuery {
 	public String getMdx() {
 		return mdx;
 	}
-	
+
+	public void setParameterResolvedMdx(String val){
+	}
+
 	@JsonIgnore
 	public String getParameterResolvedMdx() {
 		String replacedMdx = mdx;
