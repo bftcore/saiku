@@ -247,7 +247,7 @@ public class SecurityAwareConnectionManager extends AbstractConnectionManager im
 			Collection<? extends GrantedAuthority>
                 auths = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
 			for (GrantedAuthority a : auths) {
-				roles.add(a.getAuthority());
+				roles.addAll(Arrays.asList(a.getAuthority().substring(1, a.getAuthority().length() - 1).split(", ")));
 			}
 		}
 		return roles;
