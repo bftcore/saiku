@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 
 import javax.servlet.ServletException;
 import javax.ws.rs.*;
@@ -283,6 +285,29 @@ public class Query2Resource {
         }
     }
 
+  public static String getRFC5987EncodedUTF8(final String s) throws UnsupportedEncodingException {
+    final byte[] s_bytes = s.getBytes("UTF-8");
+    final int len = s_bytes.length;
+    final StringBuilder sb = new StringBuilder(len << 1);
+    final char[] digits = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+    final byte[] attr_char =
+        {'!','#','$','&','+','-','.','0','1','2','3','4','5','6','7','8','9',
+         'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','^','_','`',
+         'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','|', '~'};
+
+    for (int i = 0; i < len; ++i) {
+      final byte b = s_bytes[i];
+      if (Arrays.binarySearch(attr_char, b) >= 0)
+        sb.append((char) b);
+      else {
+        sb.append('%');
+        sb.append(digits[0x0f & (b >>> 4)]);
+        sb.append(digits[b & 0x0f]);
+      }
+    }
+
+    return sb.toString();
+  }
 
   /**
    * Query export to excel.
@@ -325,7 +350,7 @@ public class Query2Resource {
             }
             return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
                     "content-disposition",
-                    "attachment; filename = " + name).header(
+                    "attachment; filename = " + name + "; filename* = " + "UTF-8''" + getRFC5987EncodedUTF8(name)).header(
                     "content-length",doc.length).build();
         }
         catch (Exception e) {
@@ -376,7 +401,7 @@ public class Query2Resource {
 
             return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
                     "content-disposition",
-                    "attachment; filename = " + name + ".csv").header(
+                    "attachment; filename = " + name + ".csv; filename* = " + "UTF-8''" + getRFC5987EncodedUTF8(name) + ".csv").header(
                     "content-length",doc.length).build();
         }
         catch (Exception e) {
@@ -543,7 +568,7 @@ public class Query2Resource {
             String name = SaikuProperties.webExportCsvName;
             return Response.ok(doc, MediaType.APPLICATION_OCTET_STREAM).header(
                     "content-disposition",
-                    "attachment; filename = " + name + "-drillthrough.csv").header(
+                    "attachment; filename = " + name + "-drillthrough.csv; filename* = " + "UTF-8''" + getRFC5987EncodedUTF8(name)+ "-drillthrough.csv").header(
                     "content-length",doc.length).build();
 
 
@@ -644,7 +669,7 @@ public class Query2Resource {
             }
             return Response.ok(doc).type("application/pdf").header(
                     "content-disposition",
-                    "attachment; filename = "+name+".pdf").header(
+                    "attachment; filename = "+name+".pdf; filename* = " + "UTF-8''" + getRFC5987EncodedUTF8(name)+".pdf").header(
                     "content-length",doc.length).build();
         } catch (Exception e) {
             log.error("Error exporting query to  PDF", e);
